@@ -64,7 +64,7 @@ The tool is designed for **server owners and administrators** who need to duplic
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/discord-cloner.git
+git clone https://github.com/Discord-Cloner-V7/discord-cloner.git
 cd discord-cloner
 
 # Install dependencies
