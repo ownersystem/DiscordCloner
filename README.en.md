@@ -26,6 +26,7 @@
 - [Usage](#usage)
 - [Requirements](#requirements)
 - [Warning](#warning)
+- [Disclaimer](#disclaimer)
 
 ---
 
@@ -103,6 +104,16 @@ npm start
 ## Warning
 
 > ⚠️ **A full clone deletes all existing channels and roles on the target server.** This action is irreversible. Only use this tool on servers you're authorized to modify.
+
+---
+
+## Disclaimer
+
+- This project is **not affiliated with, endorsed by, or sponsored by Discord Inc.** in any way. "Discord" is a trademark of Discord Inc.
+- Using this tool, especially with a user account token instead of a bot token, **may violate Discord's [Terms of Service](https://discord.com/terms) and [Community Guidelines](https://discord.com/guidelines)**, including restrictions on automating client features (self-botting). Violating Discord's ToS can result in account or server termination by Discord.
+- The author(s) provide this tool **"as is", without warranty of any kind**, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, and non-infringement.
+- The author(s) **shall not be held liable** for any direct, indirect, incidental, or other damages, including account bans, loss of server data, or any other consequences arising from the use or inability to use this software.
+- Full responsibility for using this tool, and for complying with applicable law and the terms of any platform it is used on, rests **solely with the user**.
 
 ---
 
