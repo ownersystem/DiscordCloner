@@ -1,107 +1,47 @@
-# DiscordCloner v8
+<div align="center">
 
-🇷🇺 [Русский](#-русский) · 🇬🇧 [English](#-english)
+<pre>
+██████╗ ██╗███████╗ ██████╗ ██████╗ ██████╗ ██████╗
+██╔══██╗██║██╔════╝██╔════╝██╔═══██╗██╔══██╗██╔══██╗
+██║  ██║██║███████╗██║     ██║   ██║██████╔╝██║  ██║
+██║  ██║██║╚════██║██║     ██║   ██║██╔══██╗██║  ██║
+██████╔╝██║███████║╚██████╗╚██████╔╝██║  ██║██████╔╝
+╚═════╝ ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
+ ██████╗██╗      ██████╗ ███╗   ██╗███████╗██████╗
+██╔════╝██║     ██╔═══██╗████╗  ██║██╔════╝██╔══██╗
+██║     ██║     ██║   ██║██╔██╗ ██║█████╗  ██████╔╝
+██║     ██║     ██║   ██║██║╚██╗██║██╔══╝  ██╔══██╗
+╚██████╗███████╗╚██████╔╝██║ ╚████║███████╗██║  ██║
+ ╚═════╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
+</pre>
 
----
+**Полное клонирование Discord-серверов: роли, каналы, эмодзи, стикеры и настройки**
+**Full Discord server cloning: roles, channels, emojis, stickers and settings**
 
-## 🇷🇺 Русский
+[![Version](https://img.shields.io/badge/version-8.0.0-5865F2?style=flat-square)](./RELEASE_NOTES.md)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/license-see%20LICENSE-lightgrey?style=flat-square)](./LICENSE)
 
-Консольный инструмент для клонирования структуры Discord-сервера: роли, каналы (с правами доступа), эмодзи, стикеры и базовые настройки сервера.
+### 🌍 Choose your language / Выберите язык
 
-### Возможности
+<table>
+<tr>
+<td align="center" width="50%">
 
-- Полное клонирование ролей (имена, цвета, разрешения, позиции)
-- Клонирование каналов и категорий с правами доступа, сохранением иерархии
-- Устойчивое создание каналов: при отказе Discord API (`400 Bad Request`) выполняется повтор с нормализованным названием, а при необходимости — без эмодзи/спецсимволов
-- Автоматическая проверка `rtc_region` голосовых/трибунных каналов по актуальному списку регионов Discord — недопустимые/устаревшие регионы отбрасываются вместо падения запроса
-- Клонирование эмодзи и стикеров с учётом лимитов сервера (буст-уровни)
-- Копирование названия, аватарки и баннера сервера
-- Отдельные режимы: полное клонирование, только эмодзи/стикеры, только роли (с гибкими настройками — с разрешениями/позициями или без)
-- Подробный лог ошибок с реальной причиной от Discord API, а не общим "400"
-- Интерфейс на русском и английском языках — выбор языка на самом первом экране, до ввода токена
-- Сохранение отчёта о клонировании в лог-файл
+### 🇷🇺 Русский
 
-### Установка
+[![Читать на русском](https://img.shields.io/badge/📖_Читать_на_русском-README.ru.md-5865F2?style=for-the-badge)](./README.ru.md)
 
-```bash
-npm install
-```
+</td>
+<td align="center" width="50%">
 
-### Запуск
+### 🇬🇧 English
 
-```bash
-npm run dev
-```
+[![Read in English](https://img.shields.io/badge/📖_Read_in_English-README.en.md-5865F2?style=for-the-badge)](./README.en.md)
 
-или сборка и запуск скомпилированной версии:
+</td>
+</tr>
+</table>
 
-```bash
-npm run build
-npm start
-```
-
-### Использование
-
-1. При первом запуске выберите язык интерфейса (🇷🇺 Русский / 🇬🇧 English).
-2. Введите Discord-токен.
-3. Укажите ID исходного сервера (с которого клонировать) и ID целевого сервера (куда клонировать).
-4. Выберите режим клонирования и следуйте подсказкам.
-
-> ⚠️ Полное клонирование удаляет все существующие каналы и роли на целевом сервере. Это действие необратимо — используйте инструмент только на серверах, где у вас есть на это право.
-
-### Требования
-
-- Node.js 18+
-- Токен аккаунта или бота с необходимыми правами на обоих серверах
-
----
-
-## 🇬🇧 English
-
-A console tool for cloning the structure of a Discord server: roles, channels (with permission overwrites), emojis, stickers, and basic server settings.
-
-### Features
-
-- Full role cloning (names, colors, permissions, positions)
-- Channel and category cloning with permission overwrites and preserved hierarchy
-- Resilient channel creation: on a `400 Bad Request` from the Discord API, the tool retries with a normalized name and, if needed, with emojis/special characters stripped
-- Automatic validation of `rtc_region` for voice/stage channels against Discord's current region list — invalid or deprecated regions are dropped instead of failing the request
-- Emoji and sticker cloning that respects server limits (boost tiers)
-- Copying the server name, icon, and banner
-- Separate modes: full clone, emojis/stickers only, roles only (with or without permissions/positions)
-- Detailed error log showing the actual reason from the Discord API, not a generic "400"
-- Russian and English interface — language selection appears on the very first screen, before the token prompt
-- Saves a clone report to a log file
-
-### Installation
-
-```bash
-npm install
-```
-
-### Running
-
-```bash
-npm run dev
-```
-
-or build and run the compiled version:
-
-```bash
-npm run build
-npm start
-```
-
-### Usage
-
-1. On first launch, pick the interface language (🇷🇺 Русский / 🇬🇧 English).
-2. Enter your Discord token.
-3. Provide the source server ID (to clone from) and the target server ID (to clone into).
-4. Pick a clone mode and follow the prompts.
-
-> ⚠️ A full clone deletes all existing channels and roles on the target server. This action is irreversible — only use this tool on servers you're authorized to modify.
-
-### Requirements
-
-- Node.js 18+
-- An account or bot token with the necessary permissions on both servers
+</div>
