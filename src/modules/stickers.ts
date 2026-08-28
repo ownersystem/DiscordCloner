@@ -3,6 +3,7 @@ import { StickerFormat } from "../types";
 import { Logger } from "../ui/logger";
 import { Spinner } from "../ui/spinner";
 import { sleep, withRetry, withTimeout } from "../utils/api";
+import { t } from "../i18n";
 
 function stickerMeta(formatType: number): { mimeType: string; filename: string } {
   if (formatType === StickerFormat.GIF) return { mimeType: "image/gif", filename: "sticker.gif" };
@@ -16,7 +17,7 @@ export async function cloneStickers(
   targetGuildId: string,
   errors: string[]
 ): Promise<{ cloned: number }> {
-  const spinner = new Spinner("Загрузка стикеров...", "dots").start();
+  const spinner = new Spinner(t("stickers.loading"), "dots").start();
 
   const [sourceStickers, targetStickers] = await Promise.all([
     client.getGuildStickers(sourceGuildId),
@@ -28,13 +29,13 @@ export async function cloneStickers(
   let cloned = 0;
 
   if (targetStickers.length > 0) {
-    Logger.step(`Удаление ${targetStickers.length} существующих стикеров с целевого сервера`);
+    Logger.step(t("stickers.deletingExisting", { count: targetStickers.length }));
     for (const sticker of targetStickers) {
       try {
         await withTimeout(() => client.deleteSticker(targetGuildId, sticker.id), 6000);
-        Logger.delete("Стикер удалён", sticker.name);
+        Logger.delete(t("stickers.deleted"), sticker.name);
       } catch {
-        errors.push(`Ошибка удаления стикера: ${sticker.name}`);
+        errors.push(t("stickers.deleteError", { name: sticker.name }));
       }
       await sleep(450);
     }
@@ -43,7 +44,7 @@ export async function cloneStickers(
 
   const clonable = sourceStickers.filter((s) => s.available !== false);
 
-  Logger.step(`Клонирование ${clonable.length} стикеров...`);
+  Logger.step(t("stickers.cloning", { count: clonable.length }));
 
   for (const sticker of clonable) {
     try {
@@ -71,11 +72,11 @@ export async function cloneStickers(
       );
 
       cloned++;
-      Logger.clone("Стикер создан", sticker.name);
+      Logger.clone(t("stickers.created"), sticker.name);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
-      errors.push(`Ошибка клонирования стикера "${sticker.name}": ${msg}`);
-      Logger.error("Ошибка клонирования стикера", sticker.name);
+      const msg = err instanceof Error ? err.message : t("unknown.error");
+      errors.push(t("stickers.cloneError", { name: sticker.name, message: msg }));
+      Logger.error(t("stickers.cloneErrorShort"), sticker.name);
     }
     await sleep(600);
   }

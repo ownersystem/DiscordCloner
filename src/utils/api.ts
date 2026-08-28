@@ -1,3 +1,5 @@
+import { t } from "../i18n";
+
 export const sleep = (ms: number): Promise<void> =>
   new Promise((r) => setTimeout(r, ms));
 
@@ -26,7 +28,7 @@ export async function withTimeout<T>(
     fn(),
     new Promise<never>((_, reject) =>
       setTimeout(
-        () => reject(new Error("Превышено время ожидания операции")),
+        () => reject(new Error(t("api.timeout"))),
         ms
       )
     ),

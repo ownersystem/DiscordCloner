@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { t } from "../i18n";
 
 const BLUE = chalk.hex("#5865F2");
 const GREEN = chalk.hex("#57F287");
@@ -93,18 +94,18 @@ export async function withSpinner<T>(
     spinner.succeed();
     return result;
   } catch (err) {
-    spinner.fail(err instanceof Error ? err.message : "Произошла ошибка");
+    spinner.fail(err instanceof Error ? err.message : t("spinner.genericError"));
     throw err;
   }
 }
 
 export async function animateTokenCheck(onDone: () => void): Promise<void> {
   const phases = [
-    { text: "Инициализация защищённого соединения", delay: 550 },
-    { text: "Отправка запроса аутентификации", delay: 650 },
-    { text: "Проверка подписи токена", delay: 750 },
-    { text: "Получение данных аккаунта", delay: 500 },
-    { text: "Установка сессии", delay: 400 },
+    { text: t("spinner.tokenPhase1"), delay: 550 },
+    { text: t("spinner.tokenPhase2"), delay: 650 },
+    { text: t("spinner.tokenPhase3"), delay: 750 },
+    { text: t("spinner.tokenPhase4"), delay: 500 },
+    { text: t("spinner.tokenPhase5"), delay: 400 },
   ];
 
   const spinner = new Spinner(phases[0]!.text, "pulse").start();

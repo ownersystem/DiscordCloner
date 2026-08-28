@@ -10,9 +10,10 @@ import { renderSectionHeader, renderSectionFooter } from "../ui/banner";
 import { promptConfirm, selectFromList } from "../ui/prompt";
 import { sleep } from "../utils/api";
 import { saveLog } from "../utils/logSaver";
+import { t } from "../i18n";
 
 async function sectionPause(label: string): Promise<void> {
-  const spinner = new Spinner(`Ожидание стабилизации API после раздела "${label}"...`, "dots").start();
+  const spinner = new Spinner(t("cloner.waitingStabilization", { label }), "dots").start();
   await sleep(2500);
   spinner.stop();
 }
@@ -24,7 +25,7 @@ export class Cloner {
     const startTime = Date.now();
     const errors: string[] = [];
 
-    const spinner = new Spinner("Загрузка информации о серверах...", "circle").start();
+    const spinner = new Spinner(t("cloner.loadingGuildInfo"), "circle").start();
 
     let sourceName = "";
     let targetName = "";
@@ -43,14 +44,14 @@ export class Cloner {
       sourceIconHash = source.icon;
       sourceBannerHash = source.banner;
       sourceId = source.id;
-      spinner.succeed("Серверы загружены");
+      spinner.succeed(t("cloner.guildsLoaded"));
     } catch (err: unknown) {
-      spinner.fail("Ошибка загрузки данных серверов");
-      const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
-      throw new Error(`Ошибка получения серверов: ${msg}`);
+      spinner.fail(t("cloner.guildsLoadError"));
+      const msg = err instanceof Error ? err.message : t("unknown.error");
+      throw new Error(t("cloner.guildsFetchError", { message: msg }));
     }
 
-    const statsSpinner = new Spinner("Сбор статистики сервера...", "dots").start();
+    const statsSpinner = new Spinner(t("cloner.collectingStats"), "dots").start();
     let rolesCount = 0;
     let channelsCount = 0;
     let emojisCount = 0;
@@ -72,32 +73,44 @@ export class Cloner {
       statsSpinner.stop();
     }
 
-    Logger.info("Исходный сервер", sourceName);
-    Logger.info("Целевой сервер", targetName);
+    Logger.info(t("cloner.sourceServer"), sourceName);
+    Logger.info(t("cloner.targetServer"), targetName);
     console.log();
 
     const MODE_ITEMS = [
       {
         id: "full",
-        name: `Клонировать всё — роли, каналы, настройки  (без эмодзи и стикеров)`,
+        name: t("cloner.modeFull"),
       },
       {
         id: "media",
-        name: `Только эмодзи и стикеры  (эмодзи: ${emojisCount}, стикеры: ${stickersCount})`,
+        name: t("cloner.modeMedia", { emojis: emojisCount, stickers: stickersCount }),
+      },
+      {
+        id: "roles_basic",
+        name: t("cloner.modeRolesBasic", { roles: rolesCount }),
+      },
+      {
+        id: "roles_perms",
+        name: t("cloner.modeRolesPerms", { roles: rolesCount }),
+      },
+      {
+        id: "roles_full",
+        name: t("cloner.modeRolesFull", { roles: rolesCount }),
       },
     ];
 
-    const { id: mode } = await selectFromList("РЕЖИМ КЛОНИРОВАНИЯ", MODE_ITEMS);
+    const { id: mode } = await selectFromList(t("cloner.modeTitle"), MODE_ITEMS);
     console.log();
 
     if (mode === "media") {
-      Logger.info("Эмодзи для копирования", String(emojisCount));
-      Logger.info("Стикеров для копирования", String(stickersCount));
+      Logger.info(t("cloner.emojisToCopy"), String(emojisCount));
+      Logger.info(t("cloner.stickersToCopy"), String(stickersCount));
       console.log();
 
-      const confirmedMedia = await promptConfirm("Начать копирование эмодзи и стикеров?");
+      const confirmedMedia = await promptConfirm(t("cloner.confirmMedia"));
       if (!confirmedMedia) {
-        Logger.info("Копирование отменено.");
+        Logger.info(t("cloner.cancelled"));
         process.exit(0);
       }
 
@@ -107,7 +120,7 @@ export class Cloner {
       let stickersCloned = 0;
 
       if (emojisCount > 0) {
-        renderSectionHeader("ЭМОДЗИ");
+        renderSectionHeader(t("cloner.emojisSectionTitle"));
         const { cloned: ec } = await cloneEmojis(
           this.client,
           options.sourceGuildId,
@@ -115,13 +128,13 @@ export class Cloner {
           errors
         );
         emojisCloned = ec;
-        Logger.success(`${emojisCloned} эмодзи успешно скопировано`);
+        Logger.success(t("cloner.emojisCopied", { count: emojisCloned }));
         renderSectionFooter();
       }
 
       if (stickersCount > 0) {
-        if (emojisCount > 0) await sectionPause("ЭМОДЗИ");
-        renderSectionHeader("СТИКЕРЫ");
+        if (emojisCount > 0) await sectionPause(t("cloner.emojisSectionTitle"));
+        renderSectionHeader(t("cloner.stickersSectionTitle"));
         const { cloned: sc } = await cloneStickers(
           this.client,
           options.sourceGuildId,
@@ -129,7 +142,7 @@ export class Cloner {
           errors
         );
         stickersCloned = sc;
-        Logger.success(`${stickersCloned} стикеров успешно скопировано`);
+        Logger.success(t("cloner.stickersCopied", { count: stickersCloned }));
         renderSectionFooter();
       }
 
@@ -154,25 +167,81 @@ export class Cloner {
       return mediaResult;
     }
 
-    Logger.warn("Эта операция УДАЛИТ все существующие каналы и роли на целевом сервере.");
-    Logger.warn("Это действие НЕОБРАТИМО.");
+    if (mode === "roles_basic" || mode === "roles_perms" || mode === "roles_full") {
+      const modeLabels: Record<string, string> = {
+        roles_basic: t("cloner.modeLabelRolesBasic"),
+        roles_perms: t("cloner.modeLabelRolesPerms"),
+        roles_full: t("cloner.modeLabelRolesFull"),
+      };
+
+      Logger.info(t("cloner.rolesModeLabel"), modeLabels[mode]);
+      Logger.info(t("cloner.rolesToCopy"), String(rolesCount));
+      console.log();
+
+      const confirmedRoles = await promptConfirm(t("cloner.confirmRoles", { mode: modeLabels[mode] ?? "" }));
+      if (!confirmedRoles) {
+        Logger.info(t("cloner.cancelled"));
+        process.exit(0);
+      }
+
+      console.log();
+
+      const roleOptions = {
+        includePermissions: mode === "roles_perms" || mode === "roles_full",
+        includePositions: mode === "roles_full",
+      };
+
+      renderSectionHeader(t("cloner.rolesSectionTitle"));
+      const { cloned: rolesCloned } = await cloneRoles(
+        this.client,
+        options.sourceGuildId,
+        options.targetGuildId,
+        errors,
+        roleOptions
+      );
+      Logger.success(t("cloner.rolesCopied", { count: rolesCloned }));
+      renderSectionFooter();
+
+      const rolesDuration = Date.now() - startTime;
+      const rolesResult = {
+        rolesCloned,
+        channelsCloned: 0,
+        permissionsApplied: 0,
+        emojisCloned: 0,
+        stickersCloned: 0,
+        errors,
+        duration: rolesDuration,
+      };
+
+      saveLog({
+        date: new Date().toISOString(),
+        sourceGuild: { id: options.sourceGuildId, name: sourceName },
+        targetGuild: { id: options.targetGuildId, name: targetName },
+        result: rolesResult,
+      });
+
+      return rolesResult;
+    }
+
+    Logger.warn(t("cloner.destructiveWarning1"));
+    Logger.warn(t("cloner.destructiveWarning2"));
     console.log();
 
-    const copyName = await promptConfirm(`Скопировать название сервера? (${sourceName})`);
+    const copyName = await promptConfirm(t("cloner.confirmCopyName", { name: sourceName }));
     const copyIcon =
       sourceIconHash !== null
-        ? await promptConfirm("Скопировать аватарку сервера?")
+        ? await promptConfirm(t("cloner.confirmCopyIcon"))
         : false;
     const copyBanner =
       sourceBannerHash !== null
-        ? await promptConfirm("Скопировать баннер сервера?")
+        ? await promptConfirm(t("cloner.confirmCopyBanner"))
         : false;
 
     console.log();
 
-    const confirmedFull = await promptConfirm("Подтвердить клонирование?");
+    const confirmedFull = await promptConfirm(t("cloner.confirmFull"));
     if (!confirmedFull) {
-      Logger.info("Клонирование отменено.");
+      Logger.info(t("cloner.cancelled"));
       process.exit(0);
     }
 
@@ -188,7 +257,7 @@ export class Cloner {
     });
 
     if (copyName || copyIcon || copyBanner) {
-      renderSectionHeader("НАСТРОЙКИ СЕРВЕРА");
+      renderSectionHeader(t("cloner.settingsSectionTitle"));
       await this.syncGuildSettings(
         options.sourceGuildId,
         sourceId,
@@ -202,10 +271,10 @@ export class Cloner {
         errors
       );
       renderSectionFooter();
-      await sectionPause("НАСТРОЙКИ");
+      await sectionPause(t("cloner.settingsShort"));
     }
 
-    renderSectionHeader("РОЛИ");
+    renderSectionHeader(t("cloner.rolesSectionTitle"));
 
     const { roleIdMap, cloned: rolesCloned } = await cloneRoles(
       this.client,
@@ -214,12 +283,12 @@ export class Cloner {
       errors
     );
 
-    Logger.success(`${rolesCloned} ролей успешно клонировано`);
+    Logger.success(t("cloner.rolesCloned", { count: rolesCloned }));
     renderSectionFooter();
 
-    await sectionPause("РОЛИ");
+    await sectionPause(t("cloner.rolesSectionTitle"));
 
-    renderSectionHeader("КАНАЛЫ");
+    renderSectionHeader(t("cloner.channelsSectionTitle"));
 
     const { cloned: channelsCloned, permissionsApplied } = await cloneChannels(
       this.client,
@@ -229,11 +298,11 @@ export class Cloner {
       errors
     );
 
-    Logger.success(`${channelsCloned} каналов успешно клонировано`);
+    Logger.success(t("cloner.channelsCloned", { count: channelsCloned }));
     renderSectionFooter();
 
     if (!copyName && !copyIcon && !copyBanner) {
-      renderSectionHeader("НАСТРОЙКИ СЕРВЕРА");
+      renderSectionHeader(t("cloner.settingsSectionTitle"));
       await this.syncGuildSettings(
         options.sourceGuildId,
         sourceId,
@@ -307,7 +376,7 @@ export class Cloner {
 
       if (copyName) {
         patch.name = sourceName;
-        Logger.step("Копирование названия сервера...");
+        Logger.step(t("cloner.copyingName"));
       }
 
       if (copyIcon && iconHash !== null) {
@@ -316,11 +385,11 @@ export class Cloner {
           const buffer = await this.client.downloadBuffer(url);
           const mime = iconHash.startsWith("a_") ? "image/gif" : "image/png";
           patch.icon = `data:${mime};base64,${buffer.toString("base64")}`;
-          Logger.step("Копирование аватарки сервера...");
+          Logger.step(t("cloner.copyingIcon"));
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
-          errors.push(`Ошибка загрузки аватарки: ${msg}`);
-          Logger.error("Ошибка загрузки аватарки");
+          const msg = err instanceof Error ? err.message : t("unknown.error");
+          errors.push(t("cloner.iconError", { message: msg }));
+          Logger.error(t("cloner.iconErrorShort"));
         }
       }
 
@@ -330,20 +399,20 @@ export class Cloner {
           const buffer = await this.client.downloadBuffer(url);
           const mime = bannerHash.startsWith("a_") ? "image/gif" : "image/png";
           patch.banner = `data:${mime};base64,${buffer.toString("base64")}`;
-          Logger.step("Копирование баннера сервера...");
+          Logger.step(t("cloner.copyingBanner"));
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
-          errors.push(`Ошибка загрузки баннера: ${msg}`);
-          Logger.error("Ошибка загрузки баннера");
+          const msg = err instanceof Error ? err.message : t("unknown.error");
+          errors.push(t("cloner.bannerError", { message: msg }));
+          Logger.error(t("cloner.bannerErrorShort"));
         }
       }
 
       await this.client.modifyGuild(targetGuildId, patch);
-      Logger.success("Настройки сервера синхронизированы");
+      Logger.success(t("cloner.settingsSynced"));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
-      errors.push(`Ошибка синхронизации настроек сервера: ${msg}`);
-      Logger.error("Ошибка синхронизации настроек сервера");
+      const msg = err instanceof Error ? err.message : t("unknown.error");
+      errors.push(t("cloner.settingsError", { message: msg }));
+      Logger.error(t("cloner.settingsErrorShort"));
     }
   }
 }

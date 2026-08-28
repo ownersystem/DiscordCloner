@@ -1,7 +1,7 @@
 {
   "name": "discord-cloner",
-  "version": "7.0.0",
-  "description": "DiscordCloner v7 - Full server cloning system",
+  "version": "8.0.0",
+  "description": "DiscordCloner v8 - Full server cloning system",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

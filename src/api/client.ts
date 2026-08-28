@@ -250,6 +250,13 @@ export class DiscordClient {
     );
   }
 
+  async getVoiceRegions() {
+    return this.request<Array<{ id: string; name: string; deprecated: boolean; custom: boolean }>>(
+      "get",
+      "/voice/regions"
+    );
+  }
+
   async modifyGuild(
     guildId: string,
     payload: Partial<{

@@ -1,5 +1,6 @@
 import * as readline from "readline";
 import chalk from "chalk";
+import { t } from "../i18n";
 
 const BLUE = chalk.hex("#5865F2");
 const CYAN = chalk.hex("#00D4FF");
@@ -103,7 +104,7 @@ export async function promptConfirm(question: string): Promise<boolean> {
     if (lower === "y" || lower === "yes") return true;
     if (lower === "n" || lower === "no") return false;
     console.log(
-      `   ${chalk.hex("#ED4245")("✖")}  Введите ${WHITE("y")} (да) или ${GRAY("n")} (нет).`
+      `   ${chalk.hex("#ED4245")("✖")}  ${t("prompt.yesNoHint", { yes: WHITE("y"), no: GRAY("n") })}`
     );
   }
 }
@@ -124,7 +125,7 @@ export async function selectFromList<T extends { id: string; name: string }>(
   console.log();
 
   while (true) {
-    const raw = await prompt("Введите номер");
+    const raw = await prompt(t("lang.enterNumber"));
     const idx = parseInt(raw, 10) - 1;
 
     if (idx >= 0 && idx < items.length) {
@@ -132,7 +133,7 @@ export async function selectFromList<T extends { id: string; name: string }>(
     }
 
     console.log(
-      `   ${chalk.hex("#ED4245")("✖")}  Неверный выбор. Введите число от 1 до ${items.length}.`
+      `   ${chalk.hex("#ED4245")("✖")}  ${t("prompt.invalidChoice", { max: items.length })}`
     );
   }
 }

@@ -9,6 +9,9 @@ import {
 } from "../types";
 import { Logger } from "../ui/logger";
 import { sleep, withRetry, withTimeout } from "../utils/api";
+import { t } from "../i18n";
+
+const MAX_CHANNEL_NAME_LENGTH = 100;
 
 function remapPermissionOverwrites(
   overwrites: PermissionOverwrite[],
@@ -22,9 +25,75 @@ function remapPermissionOverwrites(
   }));
 }
 
+function truncateByCodePoints(value: string, maxLength: number): string {
+  const codePoints = Array.from(value);
+  if (codePoints.length <= maxLength) return value;
+  return codePoints.slice(0, maxLength).join("");
+}
+
+function normalizeChannelName(rawName: string): string {
+  const normalized = rawName.normalize("NFC");
+  const collapsedWhitespace = normalized.replace(/\s+/g, " ").trim();
+  const withoutControlChars = collapsedWhitespace.replace(/[\u0000-\u001F\u007F]/g, "");
+  const truncated = truncateByCodePoints(withoutControlChars, MAX_CHANNEL_NAME_LENGTH);
+  return truncated.length > 0 ? truncated : t("channels.unnamed");
+}
+
+function stripEmojiAndSymbols(rawName: string): string {
+  const withoutEmoji = rawName
+    .normalize("NFC")
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/\p{Emoji_Modifier}/gu, "")
+    .replace(/[\u200D\uFE0F]/g, "");
+  const collapsedWhitespace = withoutEmoji.replace(/\s+/g, " ").trim();
+  const truncated = truncateByCodePoints(collapsedWhitespace, MAX_CHANNEL_NAME_LENGTH);
+  return truncated.length > 0 ? truncated : "channel";
+}
+
+interface DiscordApiErrorDetail {
+  status: number | undefined;
+  message: string;
+}
+
+function extractApiErrorDetail(err: unknown): DiscordApiErrorDetail {
+  if (typeof err === "object" && err !== null && "response" in err) {
+    const response = (err as { response?: { status?: number; data?: unknown } }).response;
+    const status = response?.status;
+    const data = response?.data as
+      | { message?: string; errors?: unknown; code?: number }
+      | undefined;
+
+    if (data) {
+      const parts: string[] = [];
+      if (data.message) parts.push(data.message);
+      if (data.errors) {
+        try {
+          parts.push(JSON.stringify(data.errors));
+        } catch {
+          parts.push("");
+        }
+      }
+      const message = parts.filter(Boolean).join(" | ") || `HTTP ${status ?? "?"}`;
+      return { status, message };
+    }
+
+    return { status, message: `HTTP ${status ?? "?"}` };
+  }
+
+  return {
+    status: undefined,
+    message: err instanceof Error ? err.message : t("unknown.error"),
+  };
+}
+
+function isBadRequest(err: unknown): boolean {
+  return extractApiErrorDetail(err).status === 400;
+}
+
 function buildChannelPayload(
   channel: DiscordChannel,
   roleIdMap: RoleIdMap,
+  validRegions: Set<string>,
   parentId?: string
 ): CreateChannelPayload {
   const overwrites = channel.permission_overwrites
@@ -32,7 +101,7 @@ function buildChannelPayload(
     : [];
 
   const base: CreateChannelPayload = {
-    name: channel.name ?? "без-имени",
+    name: channel.name ?? t("channels.unnamed"),
     type: channel.type,
     permission_overwrites: overwrites,
   };
@@ -56,7 +125,8 @@ function buildChannelPayload(
     case ChannelType.GuildStageVoice: {
       if (channel.bitrate && channel.bitrate > 0) base.bitrate = channel.bitrate;
       if (channel.user_limit !== undefined) base.user_limit = channel.user_limit;
-      if (channel.rtc_region) base.rtc_region = channel.rtc_region;
+      if (channel.rtc_region && validRegions.has(channel.rtc_region))
+        base.rtc_region = channel.rtc_region;
       if (channel.video_quality_mode !== undefined)
         base.video_quality_mode = channel.video_quality_mode;
       break;
@@ -102,6 +172,48 @@ function buildChannelPayload(
   return base;
 }
 
+async function createChannelResilient(
+  client: DiscordClient,
+  targetGuildId: string,
+  payload: CreateChannelPayload,
+  originalName: string
+): Promise<{ created: import("../types").DiscordChannel; warning?: string }> {
+  try {
+    const created = await withRetry(
+      () => withTimeout(() => client.createChannel(targetGuildId, payload), 8000),
+      3,
+      700
+    );
+    return { created };
+  } catch (firstErr: unknown) {
+    if (!isBadRequest(firstErr)) throw firstErr;
+
+    const normalizedName = normalizeChannelName(originalName);
+    if (normalizedName !== payload.name) {
+      try {
+        const retryPayload: CreateChannelPayload = { ...payload, name: normalizedName };
+        const created = await withRetry(
+          () => withTimeout(() => client.createChannel(targetGuildId, retryPayload), 8000),
+          2,
+          700
+        );
+        return { created, warning: t("channels.normalizedNameWarning") };
+      } catch (secondErr: unknown) {
+        if (!isBadRequest(secondErr)) throw secondErr;
+      }
+    }
+
+    const strippedName = stripEmojiAndSymbols(originalName);
+    const strippedPayload: CreateChannelPayload = { ...payload, name: strippedName };
+    const created = await withRetry(
+      () => withTimeout(() => client.createChannel(targetGuildId, strippedPayload), 8000),
+      2,
+      700
+    );
+    return { created, warning: t("channels.strippedNameWarning", { name: strippedName }) };
+  }
+}
+
 export async function cloneChannels(
   client: DiscordClient,
   sourceGuildId: string,
@@ -109,23 +221,26 @@ export async function cloneChannels(
   roleIdMap: RoleIdMap,
   errors: string[]
 ): Promise<{ channelIdMap: ChannelIdMap; cloned: number; permissionsApplied: number }> {
-  const [sourceChannels, targetChannels] = await Promise.all([
+  const [sourceChannels, targetChannels, voiceRegions] = await Promise.all([
     client.getGuildChannels(sourceGuildId),
     client.getGuildChannels(targetGuildId),
+    client.getVoiceRegions().catch(() => []),
   ]);
+
+  const validRegions = new Set(voiceRegions.map((r) => r.id));
 
   const channelIdMap: ChannelIdMap = {};
   let cloned = 0;
   let permissionsApplied = 0;
 
-  Logger.step(`Удаление ${targetChannels.length} существующих каналов с целевого сервера`);
+  Logger.step(t("channels.deletingExisting", { count: targetChannels.length }));
 
   for (const ch of targetChannels) {
     try {
       await withTimeout(() => client.deleteChannel(ch.id), 6000);
-      Logger.delete("Канал удалён", ch.name ?? ch.id);
+      Logger.delete(t("channels.deleted"), ch.name ?? ch.id);
     } catch {
-      errors.push(`Ошибка удаления канала: ${ch.name ?? ch.id}`);
+      errors.push(t("channels.deleteError", { name: ch.name ?? ch.id }));
     }
     await sleep(450);
   }
@@ -140,30 +255,35 @@ export async function cloneChannels(
     .filter((c) => c.type !== ChannelType.GuildCategory)
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
-  Logger.step(`Создание ${categories.length} категорий...`);
+  Logger.step(t("channels.creatingCategories", { count: categories.length }));
 
   for (const cat of categories) {
-    const payload = buildChannelPayload(cat, roleIdMap);
+    const payload = buildChannelPayload(cat, roleIdMap, validRegions);
     try {
-      const created = await withRetry(
-        () => withTimeout(() => client.createChannel(targetGuildId, payload), 8000),
-        3,
-        700
+      const { created, warning } = await createChannelResilient(
+        client,
+        targetGuildId,
+        payload,
+        cat.name ?? t("channels.unnamed")
       );
       channelIdMap[cat.id] = created.id;
       cloned++;
-      Logger.clone("Категория создана", cat.name ?? "");
+      if (warning) {
+        Logger.warn(warning, cat.name ?? "");
+      } else {
+        Logger.clone(t("channels.categoryCreated"), cat.name ?? "");
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
-      errors.push(`Ошибка создания категории "${cat.name}": ${msg}`);
-      Logger.error("Ошибка создания категории", cat.name ?? "");
+      const detail = extractApiErrorDetail(err);
+      errors.push(t("channels.categoryCreateError", { name: cat.name ?? "", message: detail.message }));
+      Logger.error(t("channels.categoryCreateErrorShort"), cat.name ?? "");
     }
     await sleep(500);
   }
 
   await sleep(1000);
 
-  Logger.step(`Создание ${nonCategories.length} каналов...`);
+  Logger.step(t("channels.creatingChannels", { count: nonCategories.length }));
 
   const COMMUNITY_TYPES = [
     ChannelType.GuildAnnouncement,
@@ -173,18 +293,23 @@ export async function cloneChannels(
 
   for (const ch of nonCategories) {
     const resolvedParentId = ch.parent_id ? channelIdMap[ch.parent_id] : undefined;
-    const payload = buildChannelPayload(ch, roleIdMap, resolvedParentId);
+    const payload = buildChannelPayload(ch, roleIdMap, validRegions, resolvedParentId);
 
     try {
-      const created = await withRetry(
-        () => withTimeout(() => client.createChannel(targetGuildId, payload), 8000),
-        3,
-        700
+      const { created, warning } = await createChannelResilient(
+        client,
+        targetGuildId,
+        payload,
+        ch.name ?? t("channels.unnamed")
       );
       channelIdMap[ch.id] = created.id;
       cloned++;
       permissionsApplied += ch.permission_overwrites?.length ?? 0;
-      Logger.clone("Канал создан", ch.name ?? "");
+      if (warning) {
+        Logger.warn(warning, ch.name ?? "");
+      } else {
+        Logger.clone(t("channels.created"), ch.name ?? "");
+      }
     } catch (err: unknown) {
       if (COMMUNITY_TYPES.includes(ch.type)) {
         try {
@@ -198,15 +323,16 @@ export async function cloneChannels(
           if (payload.nsfw !== undefined) minimalPayload.nsfw = payload.nsfw;
           if (payload.rate_limit_per_user) minimalPayload.rate_limit_per_user = payload.rate_limit_per_user;
 
-          const created = await withRetry(
-            () => withTimeout(() => client.createChannel(targetGuildId, minimalPayload), 8000),
-            3,
-            700
+          const { created, warning } = await createChannelResilient(
+            client,
+            targetGuildId,
+            minimalPayload,
+            ch.name ?? t("channels.unnamed")
           );
           channelIdMap[ch.id] = created.id;
           cloned++;
           permissionsApplied += ch.permission_overwrites?.length ?? 0;
-          Logger.warn("Создан без тегов/реакций (параметры сброшены)", ch.name ?? "");
+          Logger.warn(warning ?? t("channels.resetParamsWarning"), ch.name ?? "");
         } catch {
           try {
             const fallback: CreateChannelPayload = {
@@ -219,25 +345,26 @@ export async function cloneChannels(
             if (payload.nsfw !== undefined) fallback.nsfw = payload.nsfw;
             if (payload.rate_limit_per_user) fallback.rate_limit_per_user = payload.rate_limit_per_user;
 
-            const created = await withRetry(
-              () => withTimeout(() => client.createChannel(targetGuildId, fallback), 8000),
-              3,
-              700
+            const { created, warning } = await createChannelResilient(
+              client,
+              targetGuildId,
+              fallback,
+              ch.name ?? t("channels.unnamed")
             );
             channelIdMap[ch.id] = created.id;
             cloned++;
             permissionsApplied += ch.permission_overwrites?.length ?? 0;
-            Logger.warn("Создан как текстовый (нужно Сообщество)", ch.name ?? "");
+            Logger.warn(warning ?? t("channels.fallbackTextWarning"), ch.name ?? "");
           } catch (fallbackErr: unknown) {
-            const msg2 = fallbackErr instanceof Error ? fallbackErr.message : "Неизвестная ошибка";
-            errors.push(`Ошибка создания канала "${ch.name}": ${msg2}`);
-            Logger.error("Ошибка создания канала", ch.name ?? "");
+            const detail = extractApiErrorDetail(fallbackErr);
+            errors.push(t("channels.createError", { name: ch.name ?? "", message: detail.message }));
+            Logger.error(t("channels.createErrorShort"), ch.name ?? "");
           }
         }
       } else {
-        const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
-        errors.push(`Ошибка создания канала "${ch.name}": ${msg}`);
-        Logger.error("Ошибка создания канала", ch.name ?? "");
+        const detail = extractApiErrorDetail(err);
+        errors.push(t("channels.createError", { name: ch.name ?? "", message: detail.message }));
+        Logger.error(t("channels.createErrorShort"), ch.name ?? "");
       }
     }
     await sleep(500);

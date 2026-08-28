@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { t } from "../i18n";
 
 const BLUE_BRIGHT = chalk.hex("#7289DA").bold;
 const BLUE_DIM = chalk.hex("#4752C4");
@@ -39,8 +40,8 @@ export function renderBanner(): void {
   console.log(LINE);
   console.log();
 
-  const metaLeft = `${GRAY("система")}  ${CYAN("DiscordCloner")}    ${GRAY("версия")}  ${WHITE("7.0")}`;
-  const metaRight = `${GRAY("владелец")}   ${CYAN("ownersystem")}    ${GRAY("сборка")}    ${WHITE("stable")}`;
+  const metaLeft = `${GRAY(t("banner.system"))}  ${CYAN("DiscordCloner")}    ${GRAY(t("banner.version"))}  ${WHITE("8.0")}`;
+  const metaRight = `${GRAY(t("banner.owner"))}   ${CYAN("ownersystem")}    ${GRAY(t("banner.build"))}    ${WHITE("stable")}`;
 
   console.log(
     `   ${metaLeft}`
@@ -52,7 +53,7 @@ export function renderBanner(): void {
   console.log(LINE);
   console.log();
   console.log(
-    `   ${GRAY("Введите ID серверов и токен для начала клонирования.")}`
+    `   ${GRAY(t("banner.hint"))}`
   );
   console.log();
 }

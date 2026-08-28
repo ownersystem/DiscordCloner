@@ -3,6 +3,7 @@ import { CreateEmojiPayload } from "../types";
 import { Logger } from "../ui/logger";
 import { Spinner } from "../ui/spinner";
 import { sleep, withRetry, withTimeout } from "../utils/api";
+import { t } from "../i18n";
 
 const EMOJI_LIMIT_CODES = new Set([30008, 30010]);
 
@@ -22,7 +23,7 @@ export async function cloneEmojis(
   targetGuildId: string,
   errors: string[]
 ): Promise<{ cloned: number }> {
-  const spinner = new Spinner("Загрузка эмодзи...", "dots").start();
+  const spinner = new Spinner(t("emojis.loading"), "dots").start();
 
   const [sourceEmojis, targetEmojis] = await Promise.all([
     client.getGuildEmojis(sourceGuildId),
@@ -34,14 +35,14 @@ export async function cloneEmojis(
   let cloned = 0;
 
   if (targetEmojis.length > 0) {
-    Logger.step(`Удаление ${targetEmojis.length} существующих эмодзи с целевого сервера`);
+    Logger.step(t("emojis.deletingExisting", { count: targetEmojis.length }));
     for (const emoji of targetEmojis) {
       if (emoji.managed) continue;
       try {
         await withTimeout(() => client.deleteEmoji(targetGuildId, emoji.id), 6000);
-        Logger.delete("Эмодзи удалён", emoji.name);
+        Logger.delete(t("emojis.deleted"), emoji.name);
       } catch {
-        errors.push(`Ошибка удаления эмодзи: ${emoji.name}`);
+        errors.push(t("emojis.deleteError", { name: emoji.name }));
       }
       await sleep(400);
     }
@@ -50,7 +51,7 @@ export async function cloneEmojis(
 
   const clonable = sourceEmojis.filter((e) => !e.managed && e.available !== false);
 
-  Logger.step(`Клонирование ${clonable.length} эмодзи...`);
+  Logger.step(t("emojis.cloning", { count: clonable.length }));
 
   const BATCH_SIZE = 10;
   const BATCH_PAUSE_MS = 9000;
@@ -62,7 +63,7 @@ export async function cloneEmojis(
     const emoji = clonable[i]!;
 
     if (i > 0 && i % BATCH_SIZE === 0) {
-      Logger.dim(`Пауза перед следующей партией (${i}/${clonable.length})...`);
+      Logger.dim(t("emojis.batchPause", { current: i, total: clonable.length }));
       await sleep(BATCH_PAUSE_MS);
     }
 
@@ -81,26 +82,26 @@ export async function cloneEmojis(
         1200
       );
       cloned++;
-      Logger.clone("Эмодзи создан", emoji.name);
+      Logger.clone(t("emojis.created"), emoji.name);
     } catch (err: unknown) {
       if (isEmojiLimitError(err)) {
         limitReached = true;
         const remaining = clonable.length - i;
         Logger.warn(
-          `Достигнут лимит эмодзи сервера — скопировано ${cloned} из ${clonable.length}`,
-          `пропущено ${remaining} шт.`
+          t("emojis.limitReached", { cloned, total: clonable.length }),
+          t("emojis.limitSkipped", { count: remaining })
         );
         Logger.warn(
-          "Для увеличения лимита повысьте уровень буста целевого сервера",
-          "Уровень 1 → 100 | Уровень 2 → 150 | Уровень 3 → 250"
+          t("emojis.limitBoostHint"),
+          t("emojis.limitTiers")
         );
         errors.push(
-          `Лимит эмодзи сервера достигнут на ${i + 1}/${clonable.length} — скопировано ${cloned}`
+          t("emojis.limitError", { current: i + 1, total: clonable.length, cloned })
         );
       } else {
-        const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
-        errors.push(`Ошибка клонирования эмодзи "${emoji.name}": ${msg}`);
-        Logger.error("Ошибка клонирования эмодзи", emoji.name);
+        const msg = err instanceof Error ? err.message : t("unknown.error");
+        errors.push(t("emojis.cloneError", { name: emoji.name, message: msg }));
+        Logger.error(t("emojis.cloneErrorShort"), emoji.name);
       }
     }
     await sleep(700);

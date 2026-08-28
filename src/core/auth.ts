@@ -1,6 +1,7 @@
 import { DiscordClient } from "../api/client";
 import { Spinner, animateTokenCheck } from "../ui/spinner";
 import { Logger } from "../ui/logger";
+import { t } from "../i18n";
 
 export interface AuthResult {
   client: DiscordClient;
@@ -27,19 +28,19 @@ export async function authenticate(rawToken: string): Promise<AuthResult> {
     animateTokenCheck(resolve)
   );
 
-  const spinner = new Spinner("Проверка учётных данных...", "pulse").start();
+  const spinner = new Spinner(t("auth.checking"), "pulse").start();
 
   try {
     const client = new DiscordClient(token);
     const user = await client.getMe();
 
-    spinner.succeed("Аутентификация успешна");
+    spinner.succeed(t("auth.success"));
     Logger.userCard(user);
 
     return { client, user };
   } catch (err: unknown) {
     const message =
-      err instanceof Error ? err.message : "Ошибка аутентификации";
+      err instanceof Error ? err.message : t("auth.genericError");
 
     const isUnauthorized =
       typeof err === "object" &&
@@ -48,11 +49,11 @@ export async function authenticate(rawToken: string): Promise<AuthResult> {
       (err as { response?: { status?: number } }).response?.status === 401;
 
     if (isUnauthorized) {
-      spinner.fail("Недействительный токен — аутентификация отклонена");
+      spinner.fail(t("auth.invalidToken"));
     } else {
-      spinner.fail(`Ошибка соединения: ${message}`);
+      spinner.fail(t("auth.connectionError", { message }));
     }
 
-    throw new Error("Ошибка аутентификации");
+    throw new Error(t("auth.genericError"));
   }
 }

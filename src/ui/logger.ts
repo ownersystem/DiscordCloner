@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { t } from "../i18n";
 
 const BLUE = chalk.hex("#5865F2");
 const GREEN = chalk.hex("#57F287");
@@ -91,22 +92,26 @@ export const Logger = {
     const fm = String(finishAt.getMinutes()).padStart(2, "0");
 
     const line = DIM_BLUE("─".repeat(70));
+    const durationText =
+      mins > 0
+        ? t("logger.durationMinSec", { min: mins, sec: secs })
+        : t("logger.durationSec", { sec: secs });
 
     console.log();
     console.log(line);
     console.log();
-    console.log(`   ${CYAN("СТАТИСТИКА ИСХОДНОГО СЕРВЕРА")}`);
+    console.log(`   ${CYAN(t("logger.sourceStatsTitle"))}`);
     console.log();
-    console.log(`   ${GRAY("Ролей")}              ${WHITE(String(stats.roles))}`);
-    console.log(`   ${GRAY("Каналов")}            ${WHITE(String(stats.channels))}`);
-    console.log(`   ${GRAY("Эмодзи")}             ${WHITE(String(stats.emojis))}`);
-    console.log(`   ${GRAY("Стикеров")}           ${WHITE(String(stats.stickers))}`);
+    console.log(`   ${GRAY(t("logger.roles"))}              ${WHITE(String(stats.roles))}`);
+    console.log(`   ${GRAY(t("logger.channels"))}            ${WHITE(String(stats.channels))}`);
+    console.log(`   ${GRAY(t("logger.emojis"))}             ${WHITE(String(stats.emojis))}`);
+    console.log(`   ${GRAY(t("logger.stickers"))}           ${WHITE(String(stats.stickers))}`);
     console.log();
     console.log(
-      `   ${GRAY("Расчётное время")}    ${YELLOW(mins > 0 ? `${mins} мин ${secs} сек` : `${secs} сек`)}`
+      `   ${GRAY(t("logger.estimatedTime"))}    ${YELLOW(durationText)}`
     );
     console.log(
-      `   ${GRAY("Завершение около")}   ${YELLOW(`${fh}:${fm}`)}`
+      `   ${GRAY(t("logger.estimatedFinish"))}   ${YELLOW(`${fh}:${fm}`)}`
     );
     console.log();
     console.log(line);
@@ -126,23 +131,23 @@ export const Logger = {
     console.log();
     console.log(line);
     console.log();
-    console.log(`   ${CYAN("ИТОГИ КЛОНИРОВАНИЯ")}`);
+    console.log(`   ${CYAN(t("logger.summaryTitle"))}`);
     console.log();
-    console.log(`   ${GRAY("Ролей клонировано")}          ${GREEN(String(result.rolesCloned))}`);
-    console.log(`   ${GRAY("Каналов клонировано")}        ${GREEN(String(result.channelsCloned))}`);
-    console.log(`   ${GRAY("Разрешений применено")}       ${GREEN(String(result.permissionsApplied))}`);
-    console.log(`   ${GRAY("Эмодзи клонировано")}         ${GREEN(String(result.emojisCloned))}`);
-    console.log(`   ${GRAY("Стикеров клонировано")}       ${GREEN(String(result.stickersCloned))}`);
+    console.log(`   ${GRAY(t("logger.rolesCloned"))}          ${GREEN(String(result.rolesCloned))}`);
+    console.log(`   ${GRAY(t("logger.channelsCloned"))}        ${GREEN(String(result.channelsCloned))}`);
+    console.log(`   ${GRAY(t("logger.permissionsApplied"))}       ${GREEN(String(result.permissionsApplied))}`);
+    console.log(`   ${GRAY(t("logger.emojisCloned"))}         ${GREEN(String(result.emojisCloned))}`);
+    console.log(`   ${GRAY(t("logger.stickersCloned"))}       ${GREEN(String(result.stickersCloned))}`);
     console.log(
-      `   ${GRAY("Ошибки")}                    ${result.errors.length > 0 ? RED(String(result.errors.length)) : GREEN("0")}`
+      `   ${GRAY(t("logger.errors"))}                    ${result.errors.length > 0 ? RED(String(result.errors.length)) : GREEN("0")}`
     );
     console.log(
-      `   ${GRAY("Длительность")}              ${WHITE(`${(result.duration / 1000).toFixed(2)}с`)}`
+      `   ${GRAY(t("logger.duration"))}              ${WHITE(`${(result.duration / 1000).toFixed(2)}${t("logger.durationSuffix")}`)}`
     );
 
     if (result.errors.length > 0) {
       console.log();
-      console.log(`   ${RED("Ошибки:")}`);
+      console.log(`   ${RED(`${t("logger.errors")}:`)}`);
       result.errors.forEach((e) => {
         console.log(`   ${RED("✖")} ${GRAY(e)}`);
       });
@@ -160,7 +165,7 @@ export const Logger = {
         : `${user.username}#${user.discriminator}`;
     console.log();
     console.log(
-      `   ${GRAY("Вход выполнен как")}   ${CYAN(tag)}   ${GRAY("ID:")} ${WHITE(user.id)}`
+      `   ${GRAY(t("logger.loggedInAs"))}   ${CYAN(tag)}   ${GRAY("ID:")} ${WHITE(user.id)}`
     );
     console.log();
   },
