@@ -63,7 +63,7 @@ The tool is built around resilient Discord API error handling — when channel c
 ## Installation
 
 ```bash
-git clone <repository url>
+git clone https://github.com/ownersystem/DiscordCloner.git
 cd DiscordCloner
 npm install
 ```
