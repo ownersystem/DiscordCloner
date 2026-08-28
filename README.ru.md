@@ -63,7 +63,7 @@
 ## Установка
 
 ```bash
-git clone <ссылка на репозиторий>
+git clone https://github.com/ownersystem/DiscordCloner.git
 cd DiscordCloner
 npm install
 ```
