@@ -44,12 +44,8 @@
 </tr>
 </table>
 
-</div>
+<br>
 
----
-
-<div align="center">
-
-**Автор: [ownersystem](https://github.com/ownersystem)**
+**Автор: [ownersystem](https://github.com/ownersystem) ![Star](./assets/star.svg)**
 
 </div>
