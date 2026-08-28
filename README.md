@@ -46,6 +46,6 @@
 
 <br>
 
-**Автор: [ownersystem](https://github.com/ownersystem) ![Star](./assets/star.svg)**
+**Автор: [ownersystem](https://github.com/ownersystem) ⭐**
 
 </div>
