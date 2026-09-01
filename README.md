@@ -18,7 +18,7 @@
 **Полное клонирование Discord-серверов: роли, каналы, эмодзи, стикеры и настройки**
 **Full Discord server cloning: roles, channels, emojis, stickers and settings**
 
-[![Version](https://img.shields.io/badge/version-8.1.0-5865F2?style=flat-square)](./RELEASE_NOTES.md)
+[![Version](https://img.shields.io/badge/version-8.2.0-5865F2?style=flat-square)](./RELEASE_NOTES.md)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-see%20LICENSE-lightgrey?style=flat-square)](./LICENSE)
@@ -43,5 +43,17 @@
 </td>
 </tr>
 </table>
+
+</div>
+
+<div align="center">
+
+💎 Support the project
+
+<a href="https://t.me/CryptoBot"> <img src="https://i.postimg.cc/gJgCKvCf/photo-2026-03-04-14-01-18.jpg" width="64" alt="CryptoBot"> </a>
+
+CryptoBot
+
+UQDg8XtM8s4-ITPKdeQ0oQ-bhanXuP9P16gGDyuSpc3UXP5F
 
 </div>
