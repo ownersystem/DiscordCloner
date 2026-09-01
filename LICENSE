@@ -12,6 +12,37 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
+---
+
+ATTRIBUTION REQUIREMENT
+
+This Software may be freely used, copied, modified, forked, published,
+distributed, and incorporated into other projects by any person or
+organization.
+
+However, if you modify, fork, redistribute, publish, or create a derivative
+work based on this Software, you MUST provide clear attribution to the
+original author by including the following link:
+
+https://github.com/ownersystem
+
+The attribution must be clearly visible and included in at least one of the
+following locations:
+
+1. The description or documentation of the project;
+2. The project's LICENSE or other license/attribution file;
+3. Another clearly visible location that reasonably identifies the original
+   source and author.
+
+The attribution requirement applies regardless of whether the modified or
+derivative version is distributed publicly or privately.
+
+You may not remove, obscure, or intentionally conceal the original author's
+attribution when publishing or distributing a modified or derivative version
+of this Software.
+
+---
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,44 +51,44 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
--------------------------------------------------------------------------------
+---
 
 ADDITIONAL DISCLAIMER OF LIABILITY
 
 This software ("DiscordCloner") is provided for educational and personal use
 only. The authors and contributors expressly disclaim any responsibility for:
 
-  1. Violations of Discord's Terms of Service (https://discord.com/terms) or
-     any other platform's terms resulting from the use of this software.
+1. Violations of Discord's Terms of Service (https://discord.com/terms) or
+   any other platform's terms resulting from the use of this software.
 
-  2. Account suspensions, bans, or terminations imposed by Discord Inc. or
-     any other service as a consequence of using this software.
+2. Account suspensions, bans, or terminations imposed by Discord Inc. or
+   any other service as a consequence of using this software.
 
-  3. Any direct, indirect, incidental, special, or consequential damages
-     arising out of or in connection with the use or inability to use this
-     software, even if advised of the possibility of such damages.
+3. Any direct, indirect, incidental, special, or consequential damages
+   arising out of or in connection with the use or inability to use this
+   software, even if advised of the possibility of such damages.
 
-  4. Data loss, server disruption, loss of server content, or any other harm
-     to Discord servers, communities, or their members caused by the use of
-     this software.
+4. Data loss, server disruption, loss of server content, or any other harm
+   to Discord servers, communities, or their members caused by the use of
+   this software.
 
-  5. Any illegal or unauthorized use of this software, including but not
-     limited to cloning servers without the explicit permission of their
-     owners.
+5. Any illegal or unauthorized use of this software, including but not
+   limited to cloning servers without the explicit permission of their
+   owners.
 
 BY USING THIS SOFTWARE, YOU ACKNOWLEDGE THAT:
 
-  - You are the owner of, or have explicit written permission to clone, any
-    Discord server you use this tool on.
+* You are the owner of, or have explicit written permission to clone, any
+  Discord server you use this tool on.
 
-  - You understand that using user tokens for automation may violate
-    Discord's Terms of Service.
+* You understand that using user tokens for automation may violate
+  Discord's Terms of Service.
 
-  - You accept full and sole responsibility for any consequences arising from
-    your use of this software.
+* You accept full and sole responsibility for any consequences arising from
+  your use of this software.
 
-  - The authors bear no responsibility whatsoever for any damages, losses,
-    or penalties resulting from your use of this software.
+* The authors bear no responsibility whatsoever for any damages, losses,
+  or penalties resulting from your use of this software.
 
 This software is NOT affiliated with, endorsed by, or in any way officially
 connected to Discord Inc. or any of its subsidiaries or affiliates.
