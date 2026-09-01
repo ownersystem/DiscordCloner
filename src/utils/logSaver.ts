@@ -23,6 +23,35 @@ function sanitizeName(name: string): string {
     .slice(0, 60);
 }
 
+export function loadRecentLogs(limit = 10): LogEntry[] {
+  try {
+    const logsDir = path.join(process.cwd(), "logs");
+    if (!fs.existsSync(logsDir)) return [];
+
+    const files = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => {
+        const fullPath = path.join(logsDir, f);
+        return { fullPath, mtime: fs.statSync(fullPath).mtimeMs };
+      })
+      .sort((a, b) => b.mtime - a.mtime)
+      .slice(0, limit);
+
+    const entries: LogEntry[] = [];
+    for (const f of files) {
+      try {
+        const raw = fs.readFileSync(f.fullPath, "utf-8");
+        entries.push(JSON.parse(raw) as LogEntry);
+      } catch {
+      }
+    }
+    return entries;
+  } catch {
+    return [];
+  }
+}
+
 export function saveLog(entry: LogEntry): void {
   try {
     const logsDir = path.join(process.cwd(), "logs");

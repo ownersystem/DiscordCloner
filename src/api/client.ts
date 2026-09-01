@@ -12,8 +12,10 @@ const sleep = (ms: number): Promise<void> =>
 
 export class DiscordClient {
   private readonly http: AxiosInstance;
+  public readonly token: string;
 
   constructor(token: string) {
+    this.token = token;
     this.http = axios.create({
       baseURL: DISCORD_BASE_URL,
       headers: {

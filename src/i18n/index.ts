@@ -324,6 +324,88 @@ const dict: Dict = {
   "channels.unnamed": { ru: "без-имени", en: "unnamed" },
 
   "unknown.error": { ru: "Неизвестная ошибка", en: "Unknown error" },
+
+  "session.setMasterPasswordIntro": {
+    ru: "Придумайте мастер-пароль для шифрования сохранённых данных.",
+    en: "Create a master password to encrypt your saved data.",
+  },
+  "session.setMasterPasswordPrompt": {
+    ru: "Мастер-пароль (мин. 8 символов)",
+    en: "Master password (min. 8 characters)",
+  },
+  "session.confirmMasterPasswordPrompt": { ru: "Повторите мастер-пароль", en: "Confirm master password" },
+  "session.masterPasswordMismatch": { ru: "Пароли не совпадают, попробуйте снова.", en: "Passwords don't match, try again." },
+  "session.masterPasswordTooShort": {
+    ru: "Пароль должен быть не короче 8 символов.",
+    en: "Password must be at least 8 characters long.",
+  },
+  "session.unlockPrompt": {
+    ru: "Мастер-пароль для расшифровки сохранённых данных",
+    en: "Master password to decrypt saved data",
+  },
+  "session.unlockFailed": { ru: "Неверный пароль или повреждённые данные.", en: "Wrong password or corrupted data." },
+  "session.unlockAttemptsLeft": { ru: "Осталось попыток: {count}", en: "Attempts left: {count}" },
+  "session.unlockExhausted": {
+    ru: "Превышено количество попыток. Сохранённые данные будут удалены.",
+    en: "Too many failed attempts. The saved data will be deleted.",
+  },
+  "session.expired": {
+    ru: "Сохранённая сессия истекла (более 30 дней). Требуется повторный вход.",
+    en: "The saved session has expired (older than 30 days). Please log in again.",
+  },
+  "session.autoLoginSaved": { ru: "🔓 Вход из сохранённых данных", en: "🔓 Signed in from saved data" },
+  "session.autoLoginNew": { ru: "🔑 Новый вход по токену", en: "🔑 New login with token" },
+  "session.tokenInvalidSaved": {
+    ru: "Сохранённый токен больше не действителен. Войдите заново.",
+    en: "The saved token is no longer valid. Please log in again.",
+  },
+  "session.savePrompt": {
+    ru: "Сохранить данные для входа (токен и язык) в зашифрованном виде?",
+    en: "Save login data (token and language) in encrypted form?",
+  },
+  "session.saved": { ru: "Данные для входа сохранены (зашифровано)", en: "Login data saved (encrypted)" },
+  "session.saveFailed": { ru: "Не удалось сохранить данные для входа", en: "Failed to save login data" },
+  "session.resetFlagDone": { ru: "Сохранённые данные удалены (--reset).", en: "Saved data deleted (--reset)." },
+
+  "menu.title": { ru: "ГЛАВНОЕ МЕНЮ", en: "MAIN MENU" },
+  "menu.clone": { ru: "Начать клонирование сервера", en: "Start server cloning" },
+  "menu.deleteData": { ru: "Удалить сохранённые данные", en: "Delete saved data" },
+  "menu.switchAccount": { ru: "Сменить аккаунт", en: "Switch account" },
+  "menu.history": { ru: "История клонирований", en: "Cloning history" },
+  "menu.exit": { ru: "Выход", en: "Exit" },
+  "menu.accountInfo": {
+    ru: "Аккаунт {tag}   ·   сохранено {date}   ·   использований: {count}",
+    en: "Account {tag}   ·   saved {date}   ·   uses: {count}",
+  },
+
+  "delete.warning": {
+    ru: "Это удалит сохранённый токен и язык с этого устройства. При следующем запуске потребуется авторизация заново.",
+    en: "This will delete the saved token and language from this device. The next launch will require logging in again.",
+  },
+  "delete.confirm": { ru: "Удалить сохранённые данные?", en: "Delete saved data?" },
+  "delete.typeToConfirm": { ru: 'Для подтверждения введите "{word}"', en: 'To confirm, type "{word}"' },
+  "delete.confirmWord": { ru: "УДАЛИТЬ", en: "DELETE" },
+  "delete.wrongWord": { ru: "Введено неверное слово. Удаление отменено.", en: "Wrong word entered. Deletion cancelled." },
+  "delete.backupOffer": {
+    ru: "Сохранить зашифрованную резервную копию перед удалением?",
+    en: "Save an encrypted backup before deleting?",
+  },
+  "delete.backupSaved": { ru: "Резервная копия сохранена: {path}", en: "Backup saved: {path}" },
+  "delete.done": {
+    ru: "Сохранённые данные удалены. При следующем запуске потребуется войти заново.",
+    en: "Saved data deleted. The next launch will require logging in again.",
+  },
+  "delete.nothingToDelete": { ru: "Сохранённых данных не найдено.", en: "No saved data found." },
+
+  "switch.confirm": { ru: "Выйти из текущего аккаунта и войти в другой?", en: "Log out of the current account and sign in with another?" },
+
+  "history.title": { ru: "ИСТОРИЯ КЛОНИРОВАНИЙ", en: "CLONING HISTORY" },
+  "history.empty": { ru: "История пуста — клонирований ещё не было.", en: "History is empty — no clones yet." },
+  "history.entry": {
+    ru: "{date}   {source} → {target}   ошибок: {errors}",
+    en: "{date}   {source} → {target}   errors: {errors}",
+  },
+  "history.backToMenu": { ru: "Нажмите Enter, чтобы вернуться в меню", en: "Press Enter to return to the menu" },
 };
 
 export function t(key: keyof typeof dict, params?: Record<string, string | number>): string {

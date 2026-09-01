@@ -6,7 +6,7 @@
 
 [🇷🇺 Русская версия](./README.ru.md) · [⬅ Back to main](./README.md)
 
-[![Version](https://img.shields.io/badge/version-8.0.0-5865F2?style=flat-square)](./RELEASE_NOTES.md)
+[![Version](https://img.shields.io/badge/version-8.1.0-5865F2?style=flat-square)](./RELEASE_NOTES.md)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Language](https://img.shields.io/badge/language-RU%20%2F%20EN-99AAB5?style=flat-square)](./README.md)
@@ -56,6 +56,8 @@ The tool is built around resilient Discord API error handling — when channel c
   - Roles only (with or without permissions/positions)
 - 🪵 **Clear error logging** — the report includes the actual reason returned by the Discord API, not a generic error code
 - 🌍 **Russian and English interface** — language selection on the very first screen, before the token prompt
+- 🔐 **Encrypted session storage** — the token and language can be saved locally (AES-256-GCM + scrypt, unlocked with your own master password); on the next launch you're logged in automatically, with your account tag shown
+- 📋 **Main menu after login** — cloning, operation history, switching accounts, or deleting saved data (with double confirmation and an optional backup)
 - 📄 **Saved reports** — the results of every clone are written to a log file
 
 ---
@@ -63,7 +65,7 @@ The tool is built around resilient Discord API error handling — when channel c
 ## Installation
 
 ```bash
-git clone https://github.com/ownersystem/DiscordCloner.git
+git clone <repository url>
 cd DiscordCloner
 npm install
 ```

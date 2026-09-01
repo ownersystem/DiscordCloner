@@ -6,7 +6,7 @@
 
 [🇬🇧 English version](./README.en.md) · [⬅ На главную](./README.md)
 
-[![Version](https://img.shields.io/badge/version-8.0.0-5865F2?style=flat-square)](./RELEASE_NOTES.md)
+[![Version](https://img.shields.io/badge/version-8.1.0-5865F2?style=flat-square)](./RELEASE_NOTES.md)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Язык](https://img.shields.io/badge/язык-RU%20%2F%20EN-99AAB5?style=flat-square)](./README.md)
@@ -56,6 +56,8 @@
   - Только роли (с разрешениями и позициями или без)
 - 🪵 **Понятный лог ошибок** — в отчёт попадает реальная причина отказа от Discord API, а не общий код ошибки
 - 🌍 **Русский и английский интерфейс** — выбор языка на первом экране, до ввода токена
+- 🔐 **Зашифрованное сохранение сессии** — токен и язык можно сохранить локально (AES-256-GCM + scrypt, разблокировка по вашему мастер-паролю); при повторном запуске — автоматический вход с отображением ника аккаунта
+- 📋 **Главное меню после входа** — клонирование, история операций, смена аккаунта или удаление сохранённых данных (с двойным подтверждением и опциональным бэкапом)
 - 📄 **Сохранение отчёта** — итоги каждого клонирования пишутся в лог-файл
 
 ---
@@ -63,7 +65,7 @@
 ## Установка
 
 ```bash
-git clone https://github.com/ownersystem/DiscordCloner.git
+git clone <ссылка на репозиторий>
 cd DiscordCloner
 npm install
 ```

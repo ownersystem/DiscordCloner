@@ -40,7 +40,7 @@ export function renderBanner(): void {
   console.log(LINE);
   console.log();
 
-  const metaLeft = `${GRAY(t("banner.system"))}  ${CYAN("DiscordCloner")}    ${GRAY(t("banner.version"))}  ${WHITE("8.0")}`;
+  const metaLeft = `${GRAY(t("banner.system"))}  ${CYAN("DiscordCloner")}    ${GRAY(t("banner.version"))}  ${WHITE("8.1")}`;
   const metaRight = `${GRAY(t("banner.owner"))}   ${CYAN("ownersystem")}    ${GRAY(t("banner.build"))}    ${WHITE("stable")}`;
 
   console.log(
