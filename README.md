@@ -55,3 +55,12 @@
 <a href="https://t.me/CryptoBot">CryptoBot</a> · UQDg8XtM8s4-ITPKdeQ0oQ-bhanXuP9P16gGDyuSpc3UXP5F
 
 </div>
+
+## ⭐ Поддержать проект
+
+Если **DiscordCloner** оказался полезным, поддержите проект ⭐ звездой на GitHub. Это помогает проекту развиваться и мотивирует добавлять новые возможности!
+
+## ⭐ Support the project
+
+If **DiscordCloner** has been useful to you, consider giving the project a ⭐ star on GitHub. It helps support development and motivates us to keep adding new features!
+
