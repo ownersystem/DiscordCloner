@@ -46,16 +46,6 @@
 
 </div>
 
-<div align="center">
-
-💎 Support the project
-
-<a href="https://t.me/CryptoBot"> <img src="https://i.postimg.cc/gJgCKvCf/photo-2026-03-04-14-01-18.jpg" width="32" height="32" alt="CryptoBot"> </a>
-
-<a href="https://t.me/CryptoBot">CryptoBot</a> · UQDg8XtM8s4-ITPKdeQ0oQ-bhanXuP9P16gGDyuSpc3UXP5F
-
-</div>
-
 ## ⭐ Поддержать проект
 
 Если **DiscordCloner** оказался полезным, поддержите проект ⭐ звездой на GitHub. Это помогает проекту развиваться и мотивирует добавлять новые возможности!
