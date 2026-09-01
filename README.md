@@ -52,6 +52,6 @@
 
 <a href="https://t.me/CryptoBot"> <img src="https://i.postimg.cc/gJgCKvCf/photo-2026-03-04-14-01-18.jpg" width="32" height="32" alt="CryptoBot"> </a>
 
-CryptoBot · UQDg8XtM8s4-ITPKdeQ0oQ-bhanXuP9P16gGDyuSpc3UXP5F
+<a href="https://t.me/CryptoBot">CryptoBot</a> · UQDg8XtM8s4-ITPKdeQ0oQ-bhanXuP9P16gGDyuSpc3UXP5F
 
 </div>
