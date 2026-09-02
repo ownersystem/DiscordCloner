@@ -18,7 +18,7 @@
 **Полное клонирование Discord-серверов: роли, каналы, эмодзи, стикеры и настройки**
 **Full Discord server cloning: roles, channels, emojis, stickers and settings**
 
-![Version](https://img.shields.io/badge/version-8.1.0-5865F2?style=flat-square)
+[![Version](https://img.shields.io/badge/version-8.1.0-5865F2?style=flat-square)](https://github.com/ownersystem/DiscordCloner)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-see%20LICENSE-lightgrey?style=flat-square)](./LICENSE)
