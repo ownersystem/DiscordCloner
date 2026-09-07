@@ -1,11 +1,17 @@
 import { DiscordClient } from "../api/client";
-import { CreateEmojiPayload } from "../types";
-import { Logger } from "../ui/logger";
+import { CreateEmojiPayload, DiscordEmoji } from "../types";
 import { Spinner } from "../ui/spinner";
+import { ProgressBar } from "../ui/progressBar";
 import { sleep, withRetry, withTimeout } from "../utils/api";
 import { t } from "../i18n";
 
 const EMOJI_LIMIT_CODES = new Set([30008, 30010]);
+
+export interface EmojiWithImage extends DiscordEmoji {
+  imageBuffer: Buffer;
+}
+
+export type EmojiSource = { guildId: string } | { emojis: EmojiWithImage[] };
 
 function isEmojiLimitError(err: unknown): boolean {
   if (err === null || typeof err !== "object") return false;
@@ -19,14 +25,14 @@ function isEmojiLimitError(err: unknown): boolean {
 
 export async function cloneEmojis(
   client: DiscordClient,
-  sourceGuildId: string,
+  source: EmojiSource,
   targetGuildId: string,
   errors: string[]
 ): Promise<{ cloned: number }> {
   const spinner = new Spinner(t("emojis.loading"), "dots").start();
 
-  const [sourceEmojis, targetEmojis] = await Promise.all([
-    client.getGuildEmojis(sourceGuildId),
+  const [sourceEmojisRaw, targetEmojis] = await Promise.all([
+    "emojis" in source ? Promise.resolve(source.emojis) : client.getGuildEmojis(source.guildId),
     client.getGuildEmojis(targetGuildId),
   ]);
 
@@ -35,23 +41,27 @@ export async function cloneEmojis(
   let cloned = 0;
 
   if (targetEmojis.length > 0) {
-    Logger.step(t("emojis.deletingExisting", { count: targetEmojis.length }));
+    const deleteBar = new ProgressBar(t("progress.deletingEmojis"), targetEmojis.length);
     for (const emoji of targetEmojis) {
-      if (emoji.managed) continue;
+      if (emoji.managed) {
+        deleteBar.increment();
+        continue;
+      }
       try {
         await withTimeout(() => client.deleteEmoji(targetGuildId, emoji.id), 6000);
-        Logger.delete(t("emojis.deleted"), emoji.name);
       } catch {
         errors.push(t("emojis.deleteError", { name: emoji.name }));
       }
+      deleteBar.increment();
       await sleep(400);
     }
+    deleteBar.finish();
     await sleep(1000);
   }
 
-  const clonable = sourceEmojis.filter((e) => !e.managed && e.available !== false);
+  const clonable = sourceEmojisRaw.filter((e) => !e.managed && e.available !== false);
 
-  Logger.step(t("emojis.cloning", { count: clonable.length }));
+  const createBar = new ProgressBar(t("progress.creatingEmojis"), clonable.length);
 
   const BATCH_SIZE = 10;
   const BATCH_PAUSE_MS = 9000;
@@ -63,14 +73,16 @@ export async function cloneEmojis(
     const emoji = clonable[i]!;
 
     if (i > 0 && i % BATCH_SIZE === 0) {
-      Logger.dim(t("emojis.batchPause", { current: i, total: clonable.length }));
+      createBar.interrupt(`   ${t("emojis.batchPause", { current: i, total: clonable.length })}`);
       await sleep(BATCH_PAUSE_MS);
     }
 
     try {
       const animated = emoji.animated === true;
-      const url = client.emojiUrl(emoji.id, animated);
-      const buffer = await withTimeout(() => client.downloadBuffer(url), 10000);
+      const buffer =
+        "imageBuffer" in emoji
+          ? (emoji as EmojiWithImage).imageBuffer
+          : await withTimeout(() => client.downloadBuffer(client.emojiUrl(emoji.id, animated)), 10000);
       const mimeType = animated ? "image/gif" : "image/png";
       const imageData = `data:${mimeType};base64,${buffer.toString("base64")}`;
 
@@ -82,30 +94,27 @@ export async function cloneEmojis(
         1200
       );
       cloned++;
-      Logger.clone(t("emojis.created"), emoji.name);
     } catch (err: unknown) {
       if (isEmojiLimitError(err)) {
         limitReached = true;
         const remaining = clonable.length - i;
-        Logger.warn(
-          t("emojis.limitReached", { cloned, total: clonable.length }),
-          t("emojis.limitSkipped", { count: remaining })
+        createBar.interrupt(
+          `   ${t("emojis.limitReached", { cloned, total: clonable.length })} (${t("emojis.limitSkipped", { count: remaining })})`
         );
-        Logger.warn(
-          t("emojis.limitBoostHint"),
-          t("emojis.limitTiers")
-        );
+        createBar.interrupt(`   ${t("emojis.limitBoostHint")} — ${t("emojis.limitTiers")}`);
         errors.push(
           t("emojis.limitError", { current: i + 1, total: clonable.length, cloned })
         );
       } else {
         const msg = err instanceof Error ? err.message : t("unknown.error");
         errors.push(t("emojis.cloneError", { name: emoji.name, message: msg }));
-        Logger.error(t("emojis.cloneErrorShort"), emoji.name);
+        createBar.interrupt(`   ${t("emojis.cloneErrorShort")}: ${emoji.name}`);
       }
     }
+    createBar.increment();
     await sleep(700);
   }
+  createBar.finish();
 
   return { cloned };
 }

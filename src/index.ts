@@ -1,9 +1,13 @@
 import chalk from "chalk";
-import { renderBanner } from "./ui/banner";
+import * as readline from "readline";
+import { renderBanner, printDivider } from "./ui/banner";
 import { Logger } from "./ui/logger";
 import { prompt, promptSecret, promptConfirm, selectFromList } from "./ui/prompt";
 import { authenticate, AuthResult } from "./core/auth";
 import { Cloner } from "./core/cloner";
+import { captureSnapshot } from "./core/snapshot";
+import { insertSnapshot, listSnapshots, getSnapshotData } from "./core/db";
+import { SnapshotData } from "./types/snapshot";
 import { LANGUAGES, Locale, setLocale, t } from "./i18n";
 import {
   sessionExists,
@@ -15,6 +19,7 @@ import {
   backupSession,
 } from "./core/session";
 import { loadRecentLogs } from "./utils/logSaver";
+import { loadSettings, saveSettings } from "./core/settings";
 
 const BLUE = chalk.hex("#5865F2");
 const GRAY = chalk.hex("#99AAB5");
@@ -26,8 +31,12 @@ const MAX_UNLOCK_ATTEMPTS = 3;
 
 type MenuAction = "continue" | "loggedOut" | "exit";
 
+function normalizeGuildId(raw: string): string {
+  return raw.trim().replace(/^[^\d]*/, "").replace(/[^\d]*$/, "");
+}
+
 function isValidSnowflake(id: string): boolean {
-  return /^\d{17,20}$/.test(id.trim());
+  return /^\d{17,20}$/.test(id);
 }
 
 function formatDate(iso: string): string {
@@ -40,11 +49,56 @@ function formatDate(iso: string): string {
   return `${dd}.${mm}.${yyyy} ${hh}:${min}`;
 }
 
+function isPackagedExe(): boolean {
+  return Boolean((process as unknown as { pkg?: unknown }).pkg);
+}
+
+let isExiting = false;
+
+function pauseBeforeExit(): Promise<void> {
+  if (!isPackagedExe()) return Promise.resolve();
+  if (isExiting) return Promise.resolve();
+  isExiting = true;
+
+  return new Promise((resolve) => {
+    try {
+      if (!process.stdin.readable || process.stdin.destroyed) {
+        resolve();
+        return;
+      }
+
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      console.log();
+      console.log("   Нажмите Enter, чтобы закрыть окно... / Press Enter to close this window...");
+
+      rl.once("error", () => {
+        rl.close();
+        resolve();
+      });
+
+      rl.question("", () => {
+        rl.close();
+        resolve();
+      });
+    } catch {
+      resolve();
+    }
+  });
+}
+
 async function gracefulExit(code = 0): Promise<never> {
   console.log();
   console.log(`   ${GRAY(t("app.sessionEnded"))}`);
   console.log();
+  await pauseBeforeExit();
   process.exit(code);
+}
+
+function printBreadcrumb(key: Parameters<typeof t>[0]): void {
+  console.log();
+  printDivider();
+  console.log(`   ${GRAY(t(key))}`);
+  printDivider();
 }
 
 async function selectLanguage(): Promise<Locale> {
@@ -152,28 +206,71 @@ async function tryRestoreSession(): Promise<AuthResult | null> {
   return null;
 }
 
+async function promptGuildId(label: Parameters<typeof t>[0]): Promise<string | null> {
+  while (true) {
+    const raw = await prompt(`${t(label)}  ${GRAY(t("prompt.cancelHint", { cancel: "0" }))}`);
+
+    if (raw.trim() === "0") {
+      return null;
+    }
+
+    const cleaned = normalizeGuildId(raw);
+    if (isValidSnowflake(cleaned)) {
+      return cleaned;
+    }
+
+    Logger.error(t("prompt.invalidGuildId"));
+    console.log(`   ${GRAY(t("prompt.invalidGuildIdExample"))}`);
+  }
+}
+
 async function runCloneFlow(auth: AuthResult): Promise<void> {
+  printBreadcrumb("breadcrumb.clone");
   console.log();
   console.log(`   ${BLUE("─".repeat(68))}`);
   console.log();
 
-  let sourceGuildId = "";
-  while (true) {
-    sourceGuildId = await prompt(t("prompt.sourceGuildId"));
-    if (isValidSnowflake(sourceGuildId)) break;
-    Logger.error(t("prompt.invalidGuildId"));
+  const sourceGuildId = await promptGuildId("prompt.sourceGuildId");
+  if (sourceGuildId === null) {
+    Logger.info(t("prompt.cancelled"));
+    return;
   }
 
-  let targetGuildId = "";
-  while (true) {
-    targetGuildId = await prompt(t("prompt.targetGuildId"));
-    if (isValidSnowflake(targetGuildId)) break;
-    Logger.error(t("prompt.invalidGuildId"));
+  const targetGuildId = await promptGuildId("prompt.targetGuildId");
+  if (targetGuildId === null) {
+    Logger.info(t("prompt.cancelled"));
+    return;
   }
 
   if (sourceGuildId === targetGuildId) {
     Logger.error(t("prompt.sameGuildError"));
     return;
+  }
+
+  console.log();
+
+  const wantsSourceSnapshot = await promptConfirm(t("snapshot.offerCloneSnapshot"));
+  if (wantsSourceSnapshot) {
+    try {
+      const sourceSnapshot = await captureSnapshot(auth.client, sourceGuildId);
+      const label = t("snapshot.cloneLabel", { name: sourceSnapshot.guild.name });
+      await insertSnapshot(label, sourceGuildId, sourceSnapshot.guild.name, "clone", sourceSnapshot);
+      Logger.success(t("snapshot.captured"));
+    } catch {
+      Logger.error(t("snapshot.captureFailed"));
+    }
+  }
+
+  const wantsBackup = await promptConfirm(t("snapshot.offerBackup"));
+  if (wantsBackup) {
+    try {
+      const backupSnapshot = await captureSnapshot(auth.client, targetGuildId);
+      const label = t("snapshot.backupLabel", { name: backupSnapshot.guild.name });
+      await insertSnapshot(label, targetGuildId, backupSnapshot.guild.name, "backup", backupSnapshot);
+      Logger.success(t("snapshot.captured"));
+    } catch {
+      Logger.error(t("snapshot.captureFailed"));
+    }
   }
 
   console.log();
@@ -196,7 +293,80 @@ async function runCloneFlow(auth: AuthResult): Promise<void> {
   }
 }
 
+async function runSnapshotCloneFlow(auth: AuthResult): Promise<void> {
+  printBreadcrumb("breadcrumb.snapshotClone");
+
+  const records = await listSnapshots();
+
+  if (records.length === 0) {
+    console.log();
+    Logger.info(t("snapshot.empty"));
+    return;
+  }
+
+  const items = records.map((r) => ({
+    id: String(r.id),
+    name: r.label,
+    icon: r.kind === "backup" ? "🛡️" : "📦",
+    description: formatDate(r.createdAt),
+  }));
+
+  const { id: pickedId } = await selectFromList(t("snapshot.listTitle"), items);
+  const snapshotId = Number(pickedId);
+
+  const snapshotData = await getSnapshotData<SnapshotData>(snapshotId);
+  if (!snapshotData) {
+    Logger.error(t("snapshot.captureFailed"));
+    return;
+  }
+
+  const targetGuildId = await promptGuildId("snapshot.selectTargetPrompt");
+  if (targetGuildId === null) {
+    Logger.info(t("prompt.cancelled"));
+    return;
+  }
+
+  console.log();
+  Logger.warn(t("snapshot.confirmRestore"));
+  const confirmed = await promptConfirm(t("snapshot.proceedConfirm"));
+  if (!confirmed) {
+    Logger.info(t("prompt.cancelled"));
+    return;
+  }
+
+  const wantsBackup = await promptConfirm(t("snapshot.offerBackup"));
+  if (wantsBackup) {
+    try {
+      const backupSnapshot = await captureSnapshot(auth.client, targetGuildId);
+      const label = t("snapshot.backupLabel", { name: backupSnapshot.guild.name });
+      await insertSnapshot(label, targetGuildId, backupSnapshot.guild.name, "backup", backupSnapshot);
+      Logger.success(t("snapshot.captured"));
+    } catch {
+      Logger.error(t("snapshot.captureFailed"));
+    }
+  }
+
+  console.log();
+
+  const cloner = new Cloner(auth.client);
+
+  try {
+    const result = await cloner.cloneFromSnapshot(snapshotData, targetGuildId);
+    Logger.summary(result);
+
+    if (result.errors.length === 0) {
+      Logger.success(t("snapshot.restoreSuccess"));
+    } else {
+      Logger.warn(t("prompt.cloneSuccessWithErrors", { count: result.errors.length }));
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : t("unknown.error");
+    Logger.error(t("prompt.criticalCloneError"), msg);
+  }
+}
+
 async function runDeleteFlow(): Promise<boolean> {
+  printBreadcrumb("breadcrumb.delete");
   console.log();
 
   if (!sessionExists()) {
@@ -232,6 +402,7 @@ async function runDeleteFlow(): Promise<boolean> {
 }
 
 async function runHistoryFlow(): Promise<void> {
+  printBreadcrumb("breadcrumb.history");
   console.log();
   console.log(`   ${CYAN(t("history.title"))}`);
   console.log();
@@ -255,6 +426,7 @@ async function runHistoryFlow(): Promise<void> {
 
   console.log();
   await prompt(t("history.backToMenu"));
+  printDivider();
 }
 
 async function showMainMenu(auth: AuthResult): Promise<MenuAction> {
@@ -263,6 +435,9 @@ async function showMainMenu(auth: AuthResult): Promise<MenuAction> {
     auth.user.discriminator === "0"
       ? auth.user.username
       : `${auth.user.username}#${auth.user.discriminator}`;
+
+  console.log();
+  printDivider();
 
   if (meta) {
     console.log();
@@ -278,14 +453,29 @@ async function showMainMenu(auth: AuthResult): Promise<MenuAction> {
   }
 
   const items = [
-    { id: "clone", name: t("menu.clone") },
-    { id: "delete", name: t("menu.deleteData") },
-    { id: "switch", name: t("menu.switchAccount") },
-    { id: "history", name: t("menu.history") },
-    { id: "exit", name: t("menu.exit") },
+    { id: "clone", name: t("menu.clone"), icon: "🚀", description: t("menu.cloneDescription") },
+    {
+      id: "snapshotClone",
+      name: t("menu.snapshotClone"),
+      icon: "📦",
+      description: t("menu.snapshotCloneDescription"),
+    },
+    { id: "history", name: t("menu.history"), icon: "📜", description: t("menu.historyDescription") },
+    { divider: true, id: "", name: "" },
+    { id: "switch", name: t("menu.switchAccount"), icon: "🔄", description: t("menu.switchDescription") },
+    { id: "settings", name: t("menu.settings"), icon: "⚙️", description: t("menu.settingsDescription") },
+    {
+      id: "delete",
+      name: t("menu.deleteData"),
+      icon: "🗑",
+      description: t("menu.deleteDescription"),
+      danger: true,
+    },
+    { divider: true, id: "", name: "" },
+    { id: "exit", name: t("menu.exit"), icon: "🚪", description: t("menu.exitDescription") },
   ];
 
-  const { id } = await selectFromList(t("menu.title"), items);
+  const { id } = await selectFromList(t("menu.title"), items, { hint: t("menu.hint") });
 
   switch (id) {
     case "clone":
@@ -298,6 +488,7 @@ async function showMainMenu(auth: AuthResult): Promise<MenuAction> {
     }
 
     case "switch": {
+      printBreadcrumb("breadcrumb.switch");
       const confirmed = await promptConfirm(t("switch.confirm"));
       if (!confirmed) return "continue";
       deleteSession();
@@ -308,13 +499,39 @@ async function showMainMenu(auth: AuthResult): Promise<MenuAction> {
       await runHistoryFlow();
       return "continue";
 
+    case "snapshotClone":
+      await runSnapshotCloneFlow(auth);
+      return "continue";
+
+    case "settings":
+      await runSettingsFlow();
+      return "continue";
+
     default:
       return "exit";
   }
 }
 
+async function runSettingsFlow(): Promise<void> {
+  printBreadcrumb("breadcrumb.settings");
+
+  const settings = loadSettings();
+
+  const statusKey = settings.introAnimation ? "settings.enabledStatus" : "settings.disabledStatus";
+  console.log();
+  console.log(`   ${GRAY(t("settings.introAnimationLabel"))}: ${CYAN(t(statusKey))}`);
+  console.log();
+
+  const enable = await promptConfirm(t("settings.toggleIntroAnimationPrompt"));
+  settings.introAnimation = enable;
+  saveSettings(settings);
+
+  Logger.success(enable ? t("settings.introAnimationOn") : t("settings.introAnimationOff"));
+}
+
 async function main(): Promise<void> {
-  renderBanner();
+  const settings = loadSettings();
+  await renderBanner(settings.introAnimation);
 
   let auth = await tryRestoreSession();
   if (!auth) {
@@ -357,20 +574,23 @@ process.on("SIGINT", async () => {
   process.exit(0);
 });
 
-process.on("uncaughtException", (err) => {
+process.on("uncaughtException", async (err) => {
   console.log();
   console.log(`   ${RED("✖")}  ${t("app.uncaughtException")}: ${err.message}`);
+  await pauseBeforeExit();
   process.exit(1);
 });
 
-process.on("unhandledRejection", (reason) => {
+process.on("unhandledRejection", async (reason) => {
   console.log();
   const msg = reason instanceof Error ? reason.message : String(reason);
   console.log(`   ${RED("✖")}  ${t("app.unhandledRejection")}: ${msg}`);
+  await pauseBeforeExit();
   process.exit(1);
 });
 
-bootstrap().catch((err) => {
+bootstrap().catch(async (err) => {
   console.error(err);
+  await pauseBeforeExit();
   process.exit(1);
 });

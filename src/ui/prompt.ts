@@ -5,7 +5,9 @@ import { t } from "../i18n";
 const BLUE = chalk.hex("#5865F2");
 const CYAN = chalk.hex("#00D4FF");
 const GRAY = chalk.hex("#99AAB5");
+const RED = chalk.hex("#ED4245");
 const WHITE = chalk.white;
+const DIM = chalk.hex("#4752C4");
 
 function createReadlineInterface(): readline.Interface {
   return readline.createInterface({
@@ -104,36 +106,92 @@ export async function promptConfirm(question: string): Promise<boolean> {
     if (lower === "y" || lower === "yes") return true;
     if (lower === "n" || lower === "no") return false;
     console.log(
-      `   ${chalk.hex("#ED4245")("✖")}  ${t("prompt.yesNoHint", { yes: WHITE("y"), no: GRAY("n") })}`
+      `   ${RED("✖")}  ${t("prompt.yesNoHint", { yes: WHITE("y"), no: GRAY("n") })}`
     );
   }
 }
 
-export async function selectFromList<T extends { id: string; name: string }>(
+export interface SelectItem {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  danger?: boolean;
+  divider?: boolean;
+}
+
+export interface SelectOptions {
+  hint?: string;
+  cancelLabel?: string;
+  cancelIcon?: string;
+}
+
+export const CANCEL_ID = "__cancel__";
+
+export async function selectFromList<T extends SelectItem>(
   label: string,
-  items: T[]
+  items: T[],
+  options?: SelectOptions
 ): Promise<T> {
   console.log();
   console.log(`   ${CYAN(label)}`);
   console.log();
 
-  items.forEach((item, i) => {
-    const num = BLUE(`[${String(i + 1).padStart(2, " ")}]`);
-    console.log(`   ${num}  ${WHITE(item.name)}  ${GRAY(item.id)}`);
+  const selectable = items.filter((item) => !item.divider);
+  const maxNameLength = Math.max(0, ...selectable.map((item) => item.name.length));
+
+  const indexToItem = new Map<number, T>();
+  let running = 0;
+
+  items.forEach((item) => {
+    if (item.divider) {
+      console.log();
+      return;
+    }
+
+    running++;
+    indexToItem.set(running, item);
+
+    const num = BLUE(`[${String(running).padStart(2, " ")}]`);
+    const icon = item.icon ? `${item.icon}  ` : "";
+    const nameColor = item.danger ? RED : WHITE;
+    const paddedName = item.name.padEnd(maxNameLength, " ");
+
+    console.log(`   ${num}  ${icon}${nameColor(paddedName)}`);
+    if (item.description) {
+      const indent = " ".repeat(6 + (item.icon ? 3 : 0));
+      console.log(`   ${indent}${GRAY(item.description)}`);
+    }
   });
+
+  if (options?.cancelLabel) {
+    console.log();
+    const icon = options.cancelIcon ? `${options.cancelIcon}  ` : "";
+    console.log(`   ${DIM("[ 0]")}  ${icon}${GRAY(options.cancelLabel)}`);
+  }
 
   console.log();
 
+  if (options?.hint) {
+    console.log(`   ${DIM(options.hint)}`);
+    console.log();
+  }
+
   while (true) {
     const raw = await prompt(t("lang.enterNumber"));
-    const idx = parseInt(raw, 10) - 1;
+    const idx = parseInt(raw, 10);
 
-    if (idx >= 0 && idx < items.length) {
-      return items[idx]!;
+    if (options?.cancelLabel && idx === 0) {
+      return { id: CANCEL_ID, name: options.cancelLabel } as T;
+    }
+
+    const found = indexToItem.get(idx);
+    if (found) {
+      return found;
     }
 
     console.log(
-      `   ${chalk.hex("#ED4245")("✖")}  ${t("prompt.invalidChoice", { max: items.length })}`
+      `   ${RED("✖")}  ${t("prompt.invalidChoice", { max: running })}`
     );
   }
 }

@@ -304,6 +304,10 @@ const dict: Dict = {
     ru: "Создан с нормализованным названием",
     en: "Created with a normalized name",
   },
+  "channels.bitrateAdjustedWarning": {
+    ru: "Битрейт снижен до {bitrate} кбит/с (сервер не поддерживает исходный)",
+    en: "Bitrate reduced to {bitrate} kbps (server doesn't support the original)",
+  },
   "channels.strippedNameWarning": {
     ru: 'Создан без эмодзи/спецсимволов ("{name}")',
     en: 'Created without emojis/special characters ("{name}")',
@@ -406,6 +410,99 @@ const dict: Dict = {
     en: "{date}   {source} → {target}   errors: {errors}",
   },
   "history.backToMenu": { ru: "Нажмите Enter, чтобы вернуться в меню", en: "Press Enter to return to the menu" },
+
+  "progress.deletingChannels": { ru: "Удаление каналов", en: "Deleting channels" },
+  "progress.creatingCategories": { ru: "Создание категорий", en: "Creating categories" },
+  "progress.creatingChannels": { ru: "Создание каналов", en: "Creating channels" },
+  "progress.deletingRoles": { ru: "Удаление ролей", en: "Deleting roles" },
+  "progress.creatingRoles": { ru: "Создание ролей", en: "Creating roles" },
+  "progress.deletingEmojis": { ru: "Удаление эмодзи", en: "Deleting emojis" },
+  "progress.creatingEmojis": { ru: "Создание эмодзи", en: "Creating emojis" },
+  "progress.deletingStickers": { ru: "Удаление стикеров", en: "Deleting stickers" },
+  "progress.creatingStickers": { ru: "Создание стикеров", en: "Creating stickers" },
+
+  "menu.groupActions": { ru: "Действия", en: "Actions" },
+  "menu.groupAccount": { ru: "Управление аккаунтом", en: "Account management" },
+  "menu.hint": { ru: "Ctrl+C — выход в любой момент", en: "Ctrl+C — exit at any time" },
+  "menu.cloneDescription": { ru: "Полный процесс клонирования сервера", en: "The full server-cloning process" },
+  "menu.historyDescription": { ru: "Последние операции клонирования", en: "Recent cloning operations" },
+  "menu.switchDescription": { ru: "Выйти и войти под другим токеном", en: "Log out and sign in with a different token" },
+  "menu.deleteDescription": {
+    ru: "Сотрёт сохранённый токен с этого устройства",
+    en: "Erases the saved token from this device",
+  },
+  "menu.exitDescription": { ru: "Завершить работу программы", en: "Quit the program" },
+  "menu.settings": { ru: "Настройки", en: "Settings" },
+  "menu.settingsDescription": { ru: "Включить или отключить анимацию при запуске", en: "Turn the startup animation on or off" },
+
+  "breadcrumb.clone": { ru: "Меню → Клонирование сервера", en: "Menu → Server cloning" },
+  "breadcrumb.history": { ru: "Меню → История клонирований", en: "Menu → Cloning history" },
+  "breadcrumb.delete": { ru: "Меню → Удаление сохранённых данных", en: "Menu → Delete saved data" },
+  "breadcrumb.switch": { ru: "Меню → Смена аккаунта", en: "Menu → Switch account" },
+  "breadcrumb.snapshotClone": { ru: "Меню → Клонирование из сохранённых", en: "Menu → Clone from saved" },
+  "breadcrumb.settings": { ru: "Меню → Настройки", en: "Menu → Settings" },
+
+  "settings.introAnimationLabel": { ru: "Анимация при запуске", en: "Startup animation" },
+  "settings.enabledStatus": { ru: "включена", en: "enabled" },
+  "settings.disabledStatus": { ru: "отключена", en: "disabled" },
+  "settings.toggleIntroAnimationPrompt": {
+    ru: "Включить анимацию при следующем запуске?",
+    en: "Enable the animation on the next launch?",
+  },
+  "settings.introAnimationOn": { ru: "Анимация при запуске включена", en: "Startup animation enabled" },
+  "settings.introAnimationOff": { ru: "Анимация при запуске отключена", en: "Startup animation disabled" },
+
+  "menu.snapshotClone": { ru: "Клонировать из сохранённых", en: "Clone from saved" },
+  "menu.snapshotCloneDescription": {
+    ru: "Повторно клонировать сохранённый снепшот без сканирования оригинала",
+    en: "Re-clone a saved snapshot without rescanning the original",
+  },
+
+  "prompt.cancelHint": { ru: "или {cancel} — назад в меню", en: "or {cancel} — back to menu" },
+  "prompt.backToMenu": { ru: "⬅ Назад в меню", en: "⬅ Back to menu" },
+  "prompt.invalidGuildIdExample": {
+    ru: "Пример: 123456789012345678",
+    en: "Example: 123456789012345678",
+  },
+  "prompt.cancelled": { ru: "Отменено, возврат в меню.", en: "Cancelled, returning to menu." },
+
+  "snapshot.loadingGuild": { ru: "Загрузка данных сервера...", en: "Loading server data..." },
+  "snapshot.downloadingEmojis": { ru: "Скачивание эмодзи", en: "Downloading emojis" },
+  "snapshot.downloadingStickers": { ru: "Скачивание стикеров", en: "Downloading stickers" },
+  "snapshot.emojiDownloadError": { ru: "Не удалось скачать эмодзи", en: "Failed to download emoji" },
+  "snapshot.stickerDownloadError": { ru: "Не удалось скачать стикер", en: "Failed to download sticker" },
+  "snapshot.capturing": { ru: "Сохранение снепшота сервера...", en: "Saving server snapshot..." },
+  "snapshot.captured": { ru: "Снепшот сохранён в локальную базу", en: "Snapshot saved to the local database" },
+  "snapshot.captureFailed": { ru: "Не удалось сохранить снепшот", en: "Failed to save snapshot" },
+  "snapshot.offerCloneSnapshot": {
+    ru: "Сохранить снепшот исходного сервера, чтобы клонировать его повторно без сканирования?",
+    en: "Save a snapshot of the source server so it can be cloned again without rescanning?",
+  },
+  "snapshot.offerBackup": {
+    ru: "Сохранить бэкап текущего состояния целевого сервера на случай отката?",
+    en: "Save a backup of the target server's current state in case you need to roll back?",
+  },
+  "snapshot.backupLabel": { ru: "Бэкап: {name}", en: "Backup: {name}" },
+  "snapshot.cloneLabel": { ru: "Клон: {name}", en: "Clone: {name}" },
+  "snapshot.restoring": { ru: "Восстановление из снепшота...", en: "Restoring from snapshot..." },
+  "snapshot.listTitle": { ru: "СОХРАНЁННЫЕ СНЕПШОТЫ", en: "SAVED SNAPSHOTS" },
+  "snapshot.empty": { ru: "Сохранённых снепшотов ещё нет.", en: "No saved snapshots yet." },
+  "snapshot.entry": {
+    ru: "{icon} {label}   ·   {date}",
+    en: "{icon} {label}   ·   {date}",
+  },
+  "snapshot.selectTargetPrompt": {
+    ru: "ID сервера, на который клонировать снепшот",
+    en: "ID of the server to clone the snapshot onto",
+  },
+  "snapshot.confirmRestore": {
+    ru: "Клонировать этот снепшот на указанный сервер? Все текущие каналы и роли на нём будут удалены.",
+    en: "Clone this snapshot onto the target server? All its current channels and roles will be deleted.",
+  },
+  "snapshot.proceedConfirm": { ru: "Продолжить?", en: "Proceed?" },
+  "snapshot.restoreSuccess": { ru: "Сервер восстановлен из снепшота", en: "Server restored from snapshot" },
+  "snapshot.deletePrompt": { ru: "Удалить один из снепшотов?", en: "Delete one of the snapshots?" },
+  "snapshot.deleted": { ru: "Снепшот удалён", en: "Snapshot deleted" },
 };
 
 export function t(key: keyof typeof dict, params?: Record<string, string | number>): string {

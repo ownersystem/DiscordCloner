@@ -6,7 +6,8 @@ export const sleep = (ms: number): Promise<void> =>
 export async function withRetry<T>(
   fn: () => Promise<T>,
   retries = 3,
-  baseDelay = 600
+  baseDelay = 600,
+  shouldRetry: (err: unknown) => boolean = () => true
 ): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -14,6 +15,7 @@ export async function withRetry<T>(
       return await fn();
     } catch (err) {
       lastErr = err;
+      if (!shouldRetry(err)) throw err;
       await sleep(baseDelay * (attempt + 1));
     }
   }

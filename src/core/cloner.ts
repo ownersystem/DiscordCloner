@@ -1,11 +1,12 @@
 import { DiscordClient } from "../api/client";
 import { CloneOptions, CloneResult } from "../types";
+import { SnapshotData, SnapshotGuildSettings } from "../types/snapshot";
 import { Logger } from "../ui/logger";
 import { Spinner } from "../ui/spinner";
 import { cloneRoles } from "../modules/roles";
 import { cloneChannels } from "../modules/channels";
-import { cloneEmojis } from "../modules/emojis";
-import { cloneStickers } from "../modules/stickers";
+import { cloneEmojis, EmojiWithImage } from "../modules/emojis";
+import { cloneStickers, StickerWithImage } from "../modules/stickers";
 import { renderSectionHeader, renderSectionFooter } from "../ui/banner";
 import { promptConfirm, selectFromList } from "../ui/prompt";
 import { sleep } from "../utils/api";
@@ -123,7 +124,7 @@ export class Cloner {
         renderSectionHeader(t("cloner.emojisSectionTitle"));
         const { cloned: ec } = await cloneEmojis(
           this.client,
-          options.sourceGuildId,
+          { guildId: options.sourceGuildId },
           options.targetGuildId,
           errors
         );
@@ -137,7 +138,7 @@ export class Cloner {
         renderSectionHeader(t("cloner.stickersSectionTitle"));
         const { cloned: sc } = await cloneStickers(
           this.client,
-          options.sourceGuildId,
+          { guildId: options.sourceGuildId },
           options.targetGuildId,
           errors
         );
@@ -194,7 +195,7 @@ export class Cloner {
       renderSectionHeader(t("cloner.rolesSectionTitle"));
       const { cloned: rolesCloned } = await cloneRoles(
         this.client,
-        options.sourceGuildId,
+        { guildId: options.sourceGuildId },
         options.targetGuildId,
         errors,
         roleOptions
@@ -278,7 +279,7 @@ export class Cloner {
 
     const { roleIdMap, cloned: rolesCloned } = await cloneRoles(
       this.client,
-      options.sourceGuildId,
+      { guildId: options.sourceGuildId },
       options.targetGuildId,
       errors
     );
@@ -292,7 +293,7 @@ export class Cloner {
 
     const { cloned: channelsCloned, permissionsApplied } = await cloneChannels(
       this.client,
-      options.sourceGuildId,
+      { guildId: options.sourceGuildId },
       options.targetGuildId,
       roleIdMap,
       errors
@@ -338,6 +339,138 @@ export class Cloner {
     });
 
     return cloneResult;
+  }
+
+  async cloneFromSnapshot(snapshot: SnapshotData, targetGuildId: string): Promise<CloneResult> {
+    const startTime = Date.now();
+    const errors: string[] = [];
+
+    let targetName = targetGuildId;
+    try {
+      const target = await this.client.getGuild(targetGuildId);
+      targetName = target.name;
+    } catch {
+    }
+
+    renderSectionHeader(t("cloner.rolesSectionTitle"));
+    const { roleIdMap, cloned: rolesCloned } = await cloneRoles(
+      this.client,
+      { roles: snapshot.roles },
+      targetGuildId,
+      errors
+    );
+    Logger.success(t("cloner.rolesCloned", { count: rolesCloned }));
+    renderSectionFooter();
+
+    await sectionPause(t("cloner.rolesSectionTitle"));
+
+    renderSectionHeader(t("cloner.channelsSectionTitle"));
+    const { cloned: channelsCloned, permissionsApplied } = await cloneChannels(
+      this.client,
+      { channels: snapshot.channels },
+      targetGuildId,
+      roleIdMap,
+      errors
+    );
+    Logger.success(t("cloner.channelsCloned", { count: channelsCloned }));
+    renderSectionFooter();
+
+    let emojisCloned = 0;
+    if (snapshot.emojis.length > 0) {
+      await sectionPause(t("cloner.channelsSectionTitle"));
+      renderSectionHeader(t("cloner.emojisSectionTitle"));
+      const emojisWithBuffer: EmojiWithImage[] = snapshot.emojis.map((e) => ({
+        ...e,
+        imageBuffer: Buffer.from(e.imageBase64, "base64"),
+      }));
+      const { cloned: ec } = await cloneEmojis(this.client, { emojis: emojisWithBuffer }, targetGuildId, errors);
+      emojisCloned = ec;
+      Logger.success(t("cloner.emojisCopied", { count: emojisCloned }));
+      renderSectionFooter();
+    }
+
+    let stickersCloned = 0;
+    if (snapshot.stickers.length > 0) {
+      renderSectionHeader(t("cloner.stickersSectionTitle"));
+      const stickersWithBuffer: StickerWithImage[] = snapshot.stickers.map((s) => ({
+        ...s,
+        imageBuffer: Buffer.from(s.imageBase64, "base64"),
+      }));
+      const { cloned: sc } = await cloneStickers(this.client, { stickers: stickersWithBuffer }, targetGuildId, errors);
+      stickersCloned = sc;
+      Logger.success(t("cloner.stickersCopied", { count: stickersCloned }));
+      renderSectionFooter();
+    }
+
+    renderSectionHeader(t("cloner.settingsSectionTitle"));
+    await this.applySnapshotGuildSettings(snapshot.guild, targetGuildId, errors);
+    renderSectionFooter();
+
+    const duration = Date.now() - startTime;
+
+    const result: CloneResult = {
+      rolesCloned,
+      channelsCloned,
+      permissionsApplied,
+      emojisCloned,
+      stickersCloned,
+      errors,
+      duration,
+    };
+
+    saveLog({
+      date: new Date().toISOString(),
+      sourceGuild: { id: "snapshot", name: snapshot.guild.name },
+      targetGuild: { id: targetGuildId, name: targetName },
+      result,
+    });
+
+    return result;
+  }
+
+  private async applySnapshotGuildSettings(
+    guildSettings: SnapshotGuildSettings,
+    targetGuildId: string,
+    errors: string[]
+  ): Promise<void> {
+    try {
+      const patch: Partial<{
+        name: string;
+        icon: string | null;
+        banner: string | null;
+        verification_level: number;
+        default_message_notifications: number;
+        explicit_content_filter: number;
+        afk_timeout: number;
+        system_channel_flags: number;
+        preferred_locale: string;
+      }> = {
+        name: guildSettings.name,
+        verification_level: guildSettings.verification_level,
+        default_message_notifications: guildSettings.default_message_notifications,
+        explicit_content_filter: guildSettings.explicit_content_filter,
+        afk_timeout: guildSettings.afk_timeout,
+        system_channel_flags: guildSettings.system_channel_flags,
+        preferred_locale: guildSettings.preferred_locale,
+      };
+
+      if (guildSettings.iconBase64) {
+        const mime = guildSettings.iconIsAnimated ? "image/gif" : "image/png";
+        patch.icon = `data:${mime};base64,${guildSettings.iconBase64}`;
+      }
+
+      if (guildSettings.bannerBase64) {
+        const mime = guildSettings.bannerIsAnimated ? "image/gif" : "image/png";
+        patch.banner = `data:${mime};base64,${guildSettings.bannerBase64}`;
+      }
+
+      await this.client.modifyGuild(targetGuildId, patch);
+      Logger.success(t("cloner.settingsSynced"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("unknown.error");
+      errors.push(t("cloner.settingsError", { message: msg }));
+      Logger.error(t("cloner.settingsErrorShort"));
+    }
   }
 
   private async syncGuildSettings(
